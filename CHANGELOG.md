@@ -12,3 +12,10 @@
     * `Main.hs`     : Inicializa el entorno gráfico, carga los módulos principales y ejecuta el bucle inicial.
 
 >*Nota*: Digo 'primera' porque me di cuenta que los monadeState son muy buenos para gestionar estados, pero malisimos para definir logicas. Por ejemplo, intenté aplicar monadeState al movimiento del jugador y generó muchos enredo a la hora de usarlo.
+
+## 0.1.1.0 -- 2025-11-25
+* Se corrige el movimiento acelerado diagonal. Ahora se usa un vector normalizado.
+* Se añade la posibilidad de correr presionando 'Shift'.
+* El movimiento pasa de ser manejado con CInt a Float puro.
+
+>*Nota*: El renderizado exige manejarse en CInt, pero la logica detrás la haremos con más precisión.

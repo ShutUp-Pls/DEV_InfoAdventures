@@ -1,15 +1,15 @@
 module Types where
 
 import Linear.V2 (V2)
-import Foreign.C.Types (CInt)
+-- import Foreign.C.Types (CInt)
 
 -- Definimos la posición como un vector 2D de enteros de C (para SDL)
-type Position = V2 CInt
+type Position = V2 Float
 
 -- Datos del Jugador
 data Jugador = Jugador
     { posJugador :: Position
-    , velocidad  :: CInt
+    , velocidad  :: Float
     } deriving (Show, Eq)
 
 -- Estado Global del Juego
@@ -24,4 +24,5 @@ data Input = Input
     , down  :: Bool
     , left  :: Bool
     , right :: Bool
+    , shift :: Bool
     } deriving (Show, Eq)

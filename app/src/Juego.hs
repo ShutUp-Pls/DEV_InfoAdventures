@@ -5,7 +5,7 @@ import Types
 import Personajes.Jugador
 import Mapas.Mapa
 
--- | Estado inicial del juego
+-- Estado inicial del juego
 estadoInicial :: GameState
 estadoInicial = GameState
     { jugador = nuevoJugador
@@ -19,10 +19,12 @@ updateGame input = do
     -- Obtener el estado actual
     gameState <- get
     -- Extraer el jugador actual
-    let currentPlayer = jugador gameState
-    -- Calcular el nuevo jugador usando lógica pura
-    let newPlayer = moverJugador input currentPlayer
+    let jugadorActual = jugador gameState
+    -- Calcular el nuevo jugador
+    let jugadorNuevo = if shift input
+                    then moverJugadorCorrer input jugadorActual
+                    else moverJugadorCaminar input jugadorActual
     -- Actualizar el estado con el nuevo jugador
-    put $ gameState { jugador = newPlayer }
+    put $ gameState { jugador = jugadorNuevo }
 
     return ()

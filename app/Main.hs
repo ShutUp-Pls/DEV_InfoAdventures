@@ -12,7 +12,7 @@ import Data.Text (Text)
 import Types
 import Juego
 
--- | Configuración de ventana
+-- Configuración de ventana
 screenWidth, screenHeight :: CInt
 screenWidth = 800
 screenHeight = 600
@@ -55,6 +55,7 @@ loop renderer currentState = do
           , down  = keyboardState ScancodeS
           , left  = keyboardState ScancodeA
           , right = keyboardState ScancodeD
+          , shift = keyboardState ScancodeLShift
           }
 
     -- Usamos execState para correr nuestra mónada de estado y obtener el nuevo estado
@@ -74,9 +75,13 @@ renderGame renderer gs = do
     rendererDrawColor renderer $= V4 0 0 0 255
     clear renderer
 
-    -- Dibujar Jugador (Cuadrado blanco)
+    -- Extraemos la posición
     let (Jugador (V2 x y) _) = jugador gs
-    let playerRect = Rectangle (P (V2 x y)) (V2 30 30) -- Tamaño 30x30
+
+    -- Convertimos los Floats a CInts para la pantalla
+    let xInt = round x :: CInt
+    let yInt = round y :: CInt
+    let playerRect = Rectangle (P (V2 xInt yInt)) (V2 30 30) 
     
     rendererDrawColor renderer $= V4 255 255 255 255
     fillRect renderer (Just playerRect)
