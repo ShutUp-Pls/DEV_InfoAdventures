@@ -1,0 +1,36 @@
+cabal-version:      3.4
+name:               DEV-InfoAdventures
+version:            0.1.0.0
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Marco Delgado
+maintainer:         marcodelgado.1008@gmail.com
+category:           Game
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+common warnings
+    ghc-options: -Wall
+
+executable DEV-InfoAdventures
+    import:           warnings
+    main-is:          Main.hs
+
+    other-modules:
+        Types
+        Juego
+        Personajes.Jugador
+        Mapas.Mapa
+
+    build-depends:
+        base ^>=4.17.2.0,
+        sdl2,
+        sdl2-ttf,
+        linear,
+        bytestring,
+        directory,
+        text,
+        mtl 
+    hs-source-dirs:   app, app/src
+
+    default-language: Haskell2010
