@@ -6,6 +6,15 @@ import Linear.V2 (V2)
 -- Definimos la posición como un vector 2D de enteros de C (para SDL)
 type Position = V2 Float
 
+-- Obstaculo de colisión para mapas
+data Obstaculo = Obstaculo
+    { obsPos  :: Position
+    , obsSize :: V2 Float
+    } deriving (Show, Eq)
+
+-- Alias para mapas
+type Mapa = [Obstaculo]
+
 -- Datos del Jugador
 data Jugador = Jugador
     { posJugador :: Position
@@ -15,7 +24,7 @@ data Jugador = Jugador
 -- Estado Global del Juego
 data GameState = GameState
     { jugador :: Jugador
-    , mapa    :: String
+    , mapa    :: Mapa
     } deriving (Show, Eq)
 
 -- Inputs soportados

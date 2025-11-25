@@ -19,3 +19,11 @@
 * El movimiento pasa de ser manejado con CInt a Float puro.
 
 >*Nota*: El renderizado exige manejarse en CInt, pero la logica detrás la haremos con más precisión.
+
+## 0.1.2.0 -- 2025-11-25
+* Se añade una logica de mapas basadas de rectangulos de colisiones.
+* Se añade `Colisiones.hs` para manejar las logica anexa a las colisiones.
+* Se empieza a usar `qualified` en las importaciones para tener control de donde viene cada función.
+* Se añade el dibujado de los obstaculos de colisión.
+
+>*Nota*: Me estaba perdiendo mucho cuando salian errores de compilación por desconocer el origen de las funciones.

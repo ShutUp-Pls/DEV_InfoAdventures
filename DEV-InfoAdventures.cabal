@@ -21,6 +21,7 @@ executable DEV-InfoAdventures
         Juego
         Personajes.Jugador
         Mapas.Mapa
+        Fisica.Colisiones
 
     build-depends:
         base ^>=4.17.2.0,

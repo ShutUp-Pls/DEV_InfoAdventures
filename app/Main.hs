@@ -2,8 +2,8 @@
 
 module Main where
 
-import SDL
--- import Linear (V2(..), V4(..))
+import qualified SDL
+-- import Linear (V2(..), V4(..)) 
 import Control.Monad (unless)
 import Control.Monad.State (execState)
 import Foreign.C.Types (CInt)
@@ -22,40 +22,40 @@ titulo = "Juego full Haskell"
 main :: IO ()
 main = do
     -- Inicializar SDL
-    initializeAll
+    SDL.initializeAll
 
     -- Crear la ventana
-    window <- createWindow titulo defaultWindow
-        { windowInitialSize = V2 screenWidth screenHeight }
+    window <- SDL.createWindow titulo SDL.defaultWindow
+        { SDL.windowInitialSize = SDL.V2 screenWidth screenHeight }
     
     -- Crear renderizador (aceleración por hardware)
-    renderer <- createRenderer window (-1) defaultRenderer
+    renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
 
     -- Iniciar el bucle del juego con el estado inicial
     loop renderer estadoInicial
 
     -- Limpiar al salir
-    destroyRenderer renderer
-    destroyWindow window
-    quit
+    SDL.destroyRenderer renderer
+    SDL.destroyWindow window
+    SDL.quit
 
 -- El bucle principal (Game Loop)
-loop :: Renderer -> GameState -> IO ()
+loop :: SDL.Renderer -> GameState -> IO ()
 loop renderer currentState = do
 
     -- Manejo de Eventos (Inputs)
-    events <- pollEvents
-    let eventPayloads = map eventPayload events
-    let quitEvent = any (== QuitEvent) eventPayloads
+    events <- SDL.pollEvents
+    let eventPayloads = map SDL.eventPayload events
+    let quitEvent = any (== SDL.QuitEvent) eventPayloads
     
     -- Mapear teclado al Input
-    keyboardState <- getKeyboardState
+    keyboardState <- SDL.getKeyboardState
     let input = Input
-          { up    = keyboardState ScancodeW
-          , down  = keyboardState ScancodeS
-          , left  = keyboardState ScancodeA
-          , right = keyboardState ScancodeD
-          , shift = keyboardState ScancodeLShift
+          { up    = keyboardState SDL.ScancodeW
+          , down  = keyboardState SDL.ScancodeS
+          , left  = keyboardState SDL.ScancodeA
+          , right = keyboardState SDL.ScancodeD
+          , shift = keyboardState SDL.ScancodeLShift
           }
 
     -- Usamos execState para correr nuestra mónada de estado y obtener el nuevo estado
@@ -65,26 +65,42 @@ loop renderer currentState = do
     renderGame renderer newState
 
     -- Control de Frames y Recursión
-    delay 16 -- Aproximadamente 60 FPS
+    SDL.delay 16 -- Aproximadamente 60 FPS
     unless quitEvent (loop renderer newState)
 
+-- Helper necesario para convertir coordenadas (Requerido por dibujarObstaculo)
+toSDLRect :: SDL.V2 Float -> SDL.V2 Float -> SDL.Rectangle CInt
+toSDLRect (SDL.V2 x y) (SDL.V2 w h) = 
+    SDL.Rectangle (SDL.P (SDL.V2 (round x) (round y))) (SDL.V2 (round w) (round h))
+
+-- Función para dibujar los obstaculos de colisión
+dibujarObstaculo :: SDL.Renderer -> Obstaculo -> IO ()
+dibujarObstaculo renderer (Obstaculo pos size) = do
+    let rect = toSDLRect pos size
+    SDL.fillRect renderer (Just rect)
+
 -- Función de dibujado
-renderGame :: Renderer -> GameState -> IO ()
+renderGame :: SDL.Renderer -> GameState -> IO ()
 renderGame renderer gs = do
     -- Limpiar pantalla (Fondo negro)
-    rendererDrawColor renderer $= V4 0 0 0 255
-    clear renderer
+    SDL.rendererDrawColor renderer SDL.$= SDL.V4 0 0 0 255
+    SDL.clear renderer
+
+    -- Dibujamos los obstaculos de colisión
+    SDL.rendererDrawColor renderer SDL.$= SDL.V4 100 100 100 255
+    let listaObstaculos = mapa gs
+    mapM_ (dibujarObstaculo renderer) listaObstaculos
 
     -- Extraemos la posición
-    let (Jugador (V2 x y) _) = jugador gs
+    let (Jugador (SDL.V2 x y) _) = jugador gs
 
     -- Convertimos los Floats a CInts para la pantalla
     let xInt = round x :: CInt
     let yInt = round y :: CInt
-    let playerRect = Rectangle (P (V2 xInt yInt)) (V2 30 30) 
+    let playerRect = SDL.Rectangle (SDL.P (SDL.V2 xInt yInt)) (SDL.V2 30 30) 
     
-    rendererDrawColor renderer $= V4 255 255 255 255
-    fillRect renderer (Just playerRect)
+    SDL.rendererDrawColor renderer SDL.$= SDL.V4 255 255 255 255
+    SDL.fillRect renderer (Just playerRect)
 
     -- Mostrar en pantalla
-    present renderer
+    SDL.present renderer
