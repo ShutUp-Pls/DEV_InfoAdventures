@@ -82,25 +82,24 @@ dibujarObstaculo renderer (Obstaculo pos size) = do
 -- Función de dibujado
 renderGame :: SDL.Renderer -> GameState -> IO ()
 renderGame renderer gs = do
+    let player = jugador gs
+    let pos  = posJugador player
+    let size = tamJugador player
+
+    let playerSkin = toSDLRect pos size
+    let listaObstaculos = mapa gs
+
     -- Limpiar pantalla (Fondo negro)
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 0 0 0 255
     SDL.clear renderer
 
     -- Dibujamos los obstaculos de colisión
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 100 100 100 255
-    let listaObstaculos = mapa gs
     mapM_ (dibujarObstaculo renderer) listaObstaculos
 
     -- Extraemos la posición
-    let (Jugador (SDL.V2 x y) _) = jugador gs
-
-    -- Convertimos los Floats a CInts para la pantalla
-    let xInt = round x :: CInt
-    let yInt = round y :: CInt
-    let playerRect = SDL.Rectangle (SDL.P (SDL.V2 xInt yInt)) (SDL.V2 30 30) 
-    
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 255 255 255 255
-    SDL.fillRect renderer (Just playerRect)
+    SDL.fillRect renderer (Just playerSkin)
 
     -- Mostrar en pantalla
     SDL.present renderer

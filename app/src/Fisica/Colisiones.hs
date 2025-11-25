@@ -17,7 +17,7 @@ checkColision jugador listaObstaculos =
     any chocaCon listaObstaculos
   where
     -- Asumimos que el jugador mide 30x30
-    playerSize = V2 30 30 
+    playerSize = tamJugador jugador 
     playerPos  = posJugador jugador
     
     chocaCon :: Obstaculo -> Bool

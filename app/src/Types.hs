@@ -17,8 +17,9 @@ type Mapa = [Obstaculo]
 
 -- Datos del Jugador
 data Jugador = Jugador
-    { posJugador :: Position
+    { posJugador :: V2 Float
     , velocidad  :: Float
+    , tamJugador :: V2 Float
     } deriving (Show, Eq)
 
 -- Estado Global del Juego

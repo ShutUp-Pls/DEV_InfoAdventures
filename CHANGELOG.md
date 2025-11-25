@@ -27,3 +27,7 @@
 * Se añade el dibujado de los obstaculos de colisión.
 
 >*Nota*: Me estaba perdiendo mucho cuando salian errores de compilación por desconocer el origen de las funciones.
+
+## 0.1.2.1 -- 2025-11-25
+ * Se quita la gestión de tipos desde la posición al dibujado. Ahora se usa la función `toSDLRect`.
+ * Se añade `tamJugador` como atributo del tipo `Jugador` para evitar tener que hardcodearlo en el codigo.

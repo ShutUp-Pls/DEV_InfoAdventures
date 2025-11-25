@@ -17,6 +17,7 @@ nuevoJugador :: Jugador
 nuevoJugador = Jugador
     { posJugador = V2 400 300 
     , velocidad  = velocidadCaminar
+    , tamJugador = V2 30.0 30.0
     }
 
 -- Función para calcular el vector de desplazamiento
