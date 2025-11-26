@@ -26,6 +26,8 @@ data Jugador = Jugador
 data GameState = GameState
     { jugador :: Jugador
     , mapa    :: Mapa
+    , camaraPos    :: V2 Float
+    , deadzoneSize :: V2 Float
     } deriving (Show, Eq)
 
 -- Inputs soportados
@@ -35,4 +37,6 @@ data Input = Input
     , left  :: Bool
     , right :: Bool
     , shift :: Bool
+    , decreaseDZ :: Bool
+    , increaseDZ :: Bool
     } deriving (Show, Eq)
