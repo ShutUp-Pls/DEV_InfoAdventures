@@ -51,3 +51,15 @@
  * Aliviamos la carga del monadeState del juego principal, delegando toda la logica de calculo a modulos externos, dejando en la monadeState solo la aplicación de estos mediante funciones.
 
  >*Nota*: Poco a poco se me olvida que estamos ante un lenguaje de paradigma funcional. El manejo del lenguaje empieza a sentirse familiar.
+
+ ## 0.1.6.0 -- 2025-11-26
+  * Se añaden enemigos en lista. Ahora puede haber multiples enemigos en pantalla
+  * Se añaden los items con su respectiva logica en `Items.hs`. Sus colisiones se añaden a `Colisiones.hs`
+  * Se quitan alias de data types innecesarios. No hay tipos muy complejos que lo requieran.
+  * Ahora jugador y enemigos tienen vida.
+  * Se añade HUD para que el jugador pueda ver como los items afectas a sus stats.
+  * Se separa la logica de renderizado del `Main.hs` y se centraliza en `Render.hs`
+  * La velocidad pasa a ser un dato dentro de 'Jugador'.
+  * Se añade rebote al chocar con un enemigo para evitar spam en el daño a la vida.
+
+   >*Nota*: Contra más grande el commit, más toca refactorizar despues.

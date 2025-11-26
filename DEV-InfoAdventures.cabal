@@ -20,6 +20,8 @@ executable DEV-InfoAdventures
         Types
         Juego
         Camara
+        Items
+        Render
         Personajes.Jugador
         Personajes.Enemigo
         Mapas.Mapa

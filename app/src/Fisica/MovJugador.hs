@@ -1,22 +1,22 @@
 module Fisica.MovJugador where
 
 import Linear.V2 (V2(..))
-import Linear.Metric (normalize)
+import Linear.Metric (normalize, norm)
 import Linear.Vector ((^*))
 
 import Types
 import Fisica.Colisiones(checkColision)
 
 -- Velocidades del jugador
-velCaminar :: Float
-velCaminar = 3.0
+friccion :: Float
+friccion = 0.90
 
-velCorrer :: Float
-velCorrer = 6.0
+umbralParada :: Float
+umbralParada = 0.5
 
 -- Función para calcular el vector de desplazamiento
-calcularDirJugador :: Input -> Float -> V2 Float
-calcularDirJugador input velocidad =
+calcularDirJugador :: Input -> Float -> Float -> V2 Float
+calcularDirJugador input velocidad factor =
     let 
         -- Obtenemos la dirección pura (solo -1, 0 o 1)
         dirX = (if derecha input then 1 else 0) - (if izquierda input then 1 else 0)
@@ -26,17 +26,26 @@ calcularDirJugador input velocidad =
         -- Verificamos si hay movimiento para evitar dividir por cero al normalizar
         if direccion == V2 0 0 
             then V2 0 0 
-            else normalize direccion ^* velocidad
+            else normalize direccion ^* (velocidad*factor)
 
 -- Mover al jugador 
-moverJugador :: Input -> Jugador -> Mapa -> Jugador
+moverJugador :: Input -> Jugador -> [Obstaculo] -> Jugador
 moverJugador input jugadorIni mapObstaculos = 
     let 
-        -- Determinamos la velocidad según este corriendo o no
-        velocidad = if shift input 
-                    then velCorrer
-                    else velCaminar
-        (V2 dx dy) = calcularDirJugador input velocidad
+        -- Calculamos la velocidad que tendrá el jugador
+        velCor = velCorrerJ jugadorIni
+        velCam = velCaminarJ jugadorIni
+        factor = velFactorJ jugadorIni
+        rapidez = (if shift input then velCor else velCam) * factor
+
+        -- Resolvemos la velocidad del empuje si corresponde
+        esEmpujado = norm (velGolpeJ jugadorIni) > umbralParada
+        velocidad = if esEmpujado
+                    then velGolpeJ jugadorIni
+                    else if shift input
+                         then calcularDirJugador input velCor factor 
+                         else calcularDirJugador input velCam factor
+        (V2 dx dy) = velocidad
 
         -- Verificamos si choca en X (Resolvemos posición en X)
         posIniJ = posJugador jugadorIni
@@ -51,7 +60,16 @@ moverJugador input jugadorIni mapObstaculos =
         posMidJY = posMidJ + V2 0 dy
         jugadorMovY = jugadorMid { posJugador = posMidJY }
         jugadorFin = if checkColision jugadorMovY mapObstaculos
-                 then jugadorMid
-                 else jugadorMovY
+                     then jugadorMid
+                     else jugadorMovY
+
+        nuevoVelGolpe = if esEmpujado
+                        then velGolpeJ jugadorIni ^* friccion
+                        else V2 0 0
         
-    in jugadorFin
+    in jugadorFin 
+        { velGolpeJ = nuevoVelGolpe
+        , velJugador = if esEmpujado 
+                       then norm nuevoVelGolpe
+                       else rapidez
+        }

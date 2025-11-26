@@ -1,33 +1,49 @@
 module Types where
 
 import Linear.V2 (V2)
--- import Foreign.C.Types (CInt)
-
--- Definimos la posición como un vector 2D de enteros de C (para SDL)
-type Position = V2 Float
 
 -- Obstaculo de colisión para mapas
 data Obstaculo = Obstaculo
-    { posObstaculo  :: Position
+    { posObstaculo  :: V2 Float
     , tamObstaculo :: V2 Float
     } deriving (Show, Eq)
 
--- Alias para mapas
-type Mapa = [Obstaculo]
+-- Pattern Matching para decidir que tipo de Item es un Item
+data TipoItem 
+    = Vida Float
+    | Velocidad Float
+    | Puntos Float
+    deriving (Show, Eq)
+
+data Item = Item
+    { posItem  :: V2 Float
+    , tamItem  :: V2 Float
+    , tipoItem :: TipoItem
+    , activo   :: Bool
+    } deriving (Show, Eq)
 
 -- Datos del Jugador
 data Jugador = Jugador
-    { posJugador :: V2 Float
+    { posJugador  :: V2 Float
     , velJugador  :: Float
-    , tamJugador :: V2 Float
+    , velCorrerJ  :: Float
+    , velCaminarJ :: Float
+    , velFactorJ  :: Float
+    , vidJugador  :: Float
+    , tamJugador  :: V2 Float
+    , empujeJ     :: Float
+    , velGolpeJ   :: V2 Float
     } deriving (Show, Eq)
 
 -- Datos del Enemigo
 data Enemigo = Enemigo
     { posEnemigo   :: V2 Float
     , velEnemigo   :: Float
+    , vidEnemigo   :: Float
     , tamEnemigo   :: V2 Float
     , rangoVision  :: Float
+    , empujeE      :: Float
+    , velGolpeE    :: V2 Float
     } deriving (Show, Eq)
 
 -- Datos de la Camara
@@ -39,8 +55,9 @@ data Camara = Camara
 -- Datos del Juego en si
 data GameState = GameState
     { jugador :: Jugador
-    , enemigo :: Enemigo
-    , mapa    :: Mapa
+    , items    :: [Item]
+    , enemigos :: [Enemigo]
+    , mapa    :: [Obstaculo]
     , camara  :: Camara
     } deriving (Show, Eq)
 

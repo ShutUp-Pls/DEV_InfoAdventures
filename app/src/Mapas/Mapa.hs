@@ -1,10 +1,10 @@
 module Mapas.Mapa where
 
 import Linear.V2 (V2(..))
-import Types (Mapa, Obstaculo(..))
+import Types (Obstaculo(..))
 
 -- Mapa de prueba: Unas paredes rodeando y un bloque en el medio
-cargarMapa :: Mapa
+cargarMapa :: [Obstaculo]
 cargarMapa = 
     [ Obstaculo (V2 0 0)     (V2 800 20)  -- Techo
     , Obstaculo (V2 0 580)   (V2 800 20)  -- Suelo
