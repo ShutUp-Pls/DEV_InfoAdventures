@@ -1,5 +1,6 @@
 module Juego where
 
+import Linear.V2 (V2(..))
 import Control.Monad.State
 import Types
 import Personajes.Jugador
@@ -23,18 +24,27 @@ updateGame input = do
     let jugadorActual = jugador gameState
     let mapaActual    = mapa gameState
 
-    -- Calcular el movimiento del nuevo jugador
+    -- Obtenemos el jugador en su nueva posición según corresponda
     let jugadorCandidato = if shift input
                        then moverJugadorCorrer input jugadorActual
                        else moverJugadorCaminar input jugadorActual
 
-    -- Verificamos si el nuevo jugador colisiona con el mapa
-    let hayChoque = checkColision jugadorCandidato mapaActual
-    let jugadorFinal = if hayChoque
-                       then jugadorActual
-                       else jugadorCandidato
+    -- Calculamos la diferencia de posición para el 'slicing' en diagonal
+    let deltaTotal = posJugador jugadorCandidato - posJugador jugadorActual
+    let (V2 dx dy) = deltaTotal
+
+    -- Si se puede mover en X, lo movemos, sino, pues no XD (X Resuelto)
+    let movX = jugadorActual { posJugador = posJugador jugadorActual + V2 dx 0 }
+    let movXr = if checkColision movX mapaActual 
+                        then jugadorActual 
+                        else movX
+
+    -- Si, a partir del X resuelto, se puede mover en Y, lo movemos
+    let movY = movX { posJugador = posJugador movXr + V2 0 dy }
+    let jugadorFinal = if checkColision movY mapaActual 
+                    then movXr
+                    else movY
 
     -- Actualizar el estado con el nuevo jugador
     put $ gameState { jugador = jugadorFinal }
-
     return ()

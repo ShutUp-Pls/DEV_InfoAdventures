@@ -31,3 +31,6 @@
 ## 0.1.2.1 -- 2025-11-25
  * Se quita la gestión de tipos desde la posición al dibujado. Ahora se usa la función `toSDLRect`.
  * Se añade `tamJugador` como atributo del tipo `Jugador` para evitar tener que hardcodearlo en el codigo.
+
+ ## 0.1.3.0 -- 2025-11-25
+ * Se implementa 'slicing' en el jugador para para soportar colisiones sin que estas te detengan en seco.
