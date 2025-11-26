@@ -32,9 +32,12 @@
  * Se quita la gestión de tipos desde la posición al dibujado. Ahora se usa la función `toSDLRect`.
  * Se añade `tamJugador` como atributo del tipo `Jugador` para evitar tener que hardcodearlo en el codigo.
 
- ## 0.1.3.0 -- 2025-11-25
+## 0.1.3.0 -- 2025-11-25
  * Se implementa 'slicing' en el jugador para para soportar colisiones sin que estas te detengan en seco.
 
-  ## 0.1.4.0 -- 2025-11-25
+## 0.1.4.0 -- 2025-11-25
  * Se implementa 'Deadzone' para la camara, ajustable mediante tecla 'O' para disminuir su area y tecla 'P' para aumentarla.
  * `monadeState` ahora maneja la posición de la camara, la posición de la camara y el tamaño de la 'Deadzone' de la camra.
+
+## 0.1.5.0 -- 2025-11-26
+ * Se implementa `Enemigo.hs`. Prototipo de enemigo con atributos propios y logica propia.

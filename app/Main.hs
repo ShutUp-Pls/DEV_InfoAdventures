@@ -109,6 +109,10 @@ renderGame renderer gs = do
     let pos  = posJugador player
     let size = tamJugador player
 
+    let enemy = enemigo gs
+    let ePos = posEnemigo enemy
+    let eTam = tamEnemigo enemy
+
     let camPos = camaraPos gs
     let dzSize = deadzoneSize gs
 
@@ -120,11 +124,16 @@ renderGame renderer gs = do
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 100 100 100 255
     mapM_ (dibujarObstaculo renderer camPos) (mapa gs)
 
+    SDL.rendererDrawColor renderer SDL.$= SDL.V4 0 255 0 255
+    let enemyScreePos = worldToScreen ePos camPos
+    let enemySkin = toSDLRect enemyScreePos eTam
+    SDL.fillRect renderer (Just enemySkin)
+
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 255 255 255 255
     let playerScreenPos = worldToScreen pos camPos
     let playerSkin = toSDLRect playerScreenPos size
+    SDL.fillRect renderer (Just playerSkin)
     
     -- Mostrar en pantalla
-    SDL.fillRect renderer (Just playerSkin)
     dibujarDeadzone renderer dzSize
     SDL.present renderer

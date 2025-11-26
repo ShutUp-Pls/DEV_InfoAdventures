@@ -20,6 +20,7 @@ executable DEV-InfoAdventures
         Types
         Juego
         Personajes.Jugador
+        Personajes.Enemigo
         Mapas.Mapa
         Fisica.Colisiones
 

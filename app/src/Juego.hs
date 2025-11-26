@@ -4,6 +4,7 @@ import Linear.V2 (V2(..))
 import Control.Monad.State
 import Types
 import Personajes.Jugador
+import Personajes.Enemigo
 import Mapas.Mapa
 import Fisica.Colisiones (checkColision)
 
@@ -11,6 +12,7 @@ import Fisica.Colisiones (checkColision)
 estadoInicial :: GameState
 estadoInicial = GameState
     { jugador = nuevoJugador
+    , enemigo = nuevoEnemigo
     , mapa    = cargarMapa
     , camaraPos    = V2 400 300
     , deadzoneSize = V2 100 100
@@ -25,6 +27,7 @@ updateGame input = do
 
     -- Extraer el jugador y mapa actuales
     let jugadorActual = jugador gameState
+    let enemigoActual  = enemigo gameState
     let mapaActual    = mapa gameState
 
     -- Calcula el factor de cambio por frame del Deadzone
@@ -67,6 +70,9 @@ updateGame input = do
                        then movXr
                        else movY
 
+    let deltaE = calcularDireccion enemigoActual jugadorActual
+    let enemigoFinal = moverEnemigo enemigoActual deltaE mapaActual
+
     -- Calculamos el posición de la camara según la DeadZone
     let cPos = camaraPos gameState
     let playerSize = tamJugador jugadorFinal
@@ -95,9 +101,11 @@ updateGame input = do
                            else newCamX
 
     -- Actualizar el estado con el nuevo estado del jugador, la camara y la deadzone
-    put $ gameState {
-        jugador = jugadorFinal,
-        camaraPos = finalCamPos,
-        deadzoneSize = finalDZ
-    }
+    put $ gameState 
+        {
+          jugador = jugadorFinal
+        , enemigo = enemigoFinal
+        , camaraPos = finalCamPos
+        , deadzoneSize = finalDZ
+        }
     return ()
