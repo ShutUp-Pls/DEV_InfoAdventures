@@ -1,15 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
-
 module Main where
 
+-- Módulos del sistema
 import qualified SDL
 import qualified SDL.Font as Font
-import Control.Monad (unless)
-import Control.Monad.State (execState)
+import qualified Control.Monad as CM
+import qualified Control.Monad.State as CMS
 
-import Types
-import Juego
-import Render (renderGame, screenWidth, screenHeight)
+-- Módulos propios
+import qualified Types
+import qualified Juego
+import qualified Inicio
+import qualified Graficos.Render as RR
 
 main :: IO ()
 main = do
@@ -17,16 +19,14 @@ main = do
     SDL.initializeAll
     Font.initialize
 
-    -- Crear la ventana usando las dimensiones definidas en Render
+    -- Crear la ventana y cargar fuente
     window <- SDL.createWindow "Juego full Haskell" SDL.defaultWindow
-        { SDL.windowInitialSize = SDL.V2 screenWidth screenHeight }
-    
-    -- Crear renderizador y cargar fuente
-    renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
+        { SDL.windowInitialSize = SDL.V2 RR.screenWidth RR.screenHeight }
     font <- Font.load "assets/font.ttf" 24
-
-    -- Iniciar el bucle del juego con el estado inicial
-    loop renderer font estadoInicial
+    
+    -- Crear renderizado e iniciar loop con el estado inicial del juego
+    renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
+    loop renderer font Inicio.estadoInicial
 
     -- Limpiar al salir
     Font.free font
@@ -35,33 +35,33 @@ main = do
     SDL.destroyWindow window
     SDL.quit
 
--- El bucle principal (Game Loop)
-loop :: SDL.Renderer -> Font.Font -> GameState -> IO ()
+-- El bucle principal
+loop :: SDL.Renderer -> Font.Font -> Types.GameState -> IO ()
 loop renderer font currentState = do
 
-    -- Manejo de Eventos (Inputs)
+    -- Manejo de Eventos
     events <- SDL.pollEvents
     let eventPayloads = map SDL.eventPayload events
-    let quitEvent = any (== SDL.QuitEvent) eventPayloads
-    
+    let quitEvent = SDL.QuitEvent `elem` eventPayloads
+
     -- Mapear teclado al Input
     keyboardState <- SDL.getKeyboardState
-    let input = Input
-          { arriba     = keyboardState SDL.ScancodeW
-          , abajo      = keyboardState SDL.ScancodeS
-          , izquierda  = keyboardState SDL.ScancodeA
-          , derecha    = keyboardState SDL.ScancodeD
-          , shift      = keyboardState SDL.ScancodeLShift
-          , decreaseDZ = keyboardState SDL.ScancodeO
-          , increaseDZ = keyboardState SDL.ScancodeP
+    let input = Types.Input
+          { Types.arriba     = keyboardState SDL.ScancodeW
+          , Types.abajo      = keyboardState SDL.ScancodeS
+          , Types.izquierda  = keyboardState SDL.ScancodeA
+          , Types.derecha    = keyboardState SDL.ScancodeD
+          , Types.shift      = keyboardState SDL.ScancodeLShift
+          , Types.decreaseDZ = keyboardState SDL.ScancodeO
+          , Types.increaseDZ = keyboardState SDL.ScancodeP
           }
 
-    -- Lógica del juego (Update)
-    let newState = execState (updateGame input) currentState
+    -- Lógica del juego (monadeState)
+    let newState = CMS.execState (Juego.updateGame input) currentState
 
-    -- Renderizado (Draw) - Llamada al módulo externo
-    renderGame renderer font newState
+    -- Renderizado
+    RR.renderGame renderer font newState
 
-    -- Control de Frames y Recursión
-    SDL.delay 16 -- Aproximadamente 60 FPS
-    unless quitEvent (loop renderer font newState)
+    -- Control de Frames y Recursión [1000ms/60fps=16.66...delay]
+    SDL.delay 16
+    CM.unless quitEvent (loop renderer font newState)

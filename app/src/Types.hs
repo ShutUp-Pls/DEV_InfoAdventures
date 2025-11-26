@@ -1,55 +1,67 @@
 module Types where
-
-import Linear.V2 (V2)
+    
+-- Módulos del sistema
+import qualified SDL
+import qualified Data.Text as DT
 
 -- Obstaculo de colisión para mapas
 data Obstaculo = Obstaculo
-    { posObstaculo  :: V2 Float
-    , tamObstaculo :: V2 Float
+    { posObstaculo  :: SDL.V2 Float
+    , tamObstaculo :: SDL.V2 Float
+    } deriving (Show, Eq)
+
+-- Datos de un item en pantalla
+data Item = Item
+    { posItem  :: SDL.V2 Float
+    , tamItem  :: SDL.V2 Float
+    , tipoItem :: TipoItem
+    , activo   :: Bool
     } deriving (Show, Eq)
 
 -- Pattern Matching para decidir que tipo de Item es un Item
 data TipoItem 
     = Vida Float
-    | Velocidad Float
+    | Velocidad Float Float Bool
     | Puntos Float
     deriving (Show, Eq)
 
-data Item = Item
-    { posItem  :: V2 Float
-    , tamItem  :: V2 Float
-    , tipoItem :: TipoItem
-    , activo   :: Bool
+-- Un Buff activo en el jugador
+data Buff = Buff 
+    { buffNombre   :: DT.Text
+    , buffEtiqueta :: DT.Text
+    , buffTiempo   :: Float
+    , buffValor    :: Float
     } deriving (Show, Eq)
 
 -- Datos del Jugador
 data Jugador = Jugador
-    { posJugador  :: V2 Float
+    { posJugador  :: SDL.V2 Float
     , velJugador  :: Float
     , velCorrerJ  :: Float
     , velCaminarJ :: Float
     , velFactorJ  :: Float
     , vidJugador  :: Float
-    , tamJugador  :: V2 Float
+    , tamJugador  :: SDL.V2 Float
     , empujeJ     :: Float
-    , velGolpeJ   :: V2 Float
+    , velGolpeJ   :: SDL.V2 Float
+    , buffsActivos :: [Buff]
     } deriving (Show, Eq)
 
 -- Datos del Enemigo
 data Enemigo = Enemigo
-    { posEnemigo   :: V2 Float
+    { posEnemigo   :: SDL.V2 Float
     , velEnemigo   :: Float
     , vidEnemigo   :: Float
-    , tamEnemigo   :: V2 Float
+    , tamEnemigo   :: SDL.V2 Float
     , rangoVision  :: Float
     , empujeE      :: Float
-    , velGolpeE    :: V2 Float
+    , velGolpeE    :: SDL.V2 Float
     } deriving (Show, Eq)
 
 -- Datos de la Camara
 data Camara = Camara
-    { posCamara    :: V2 Float
-    , deadzoneSize :: V2 Float
+    { posCamara    :: SDL.V2 Float
+    , deadzoneSize :: SDL.V2 Float
     } deriving (Show, Eq)
 
 -- Datos del Juego en si

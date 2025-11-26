@@ -1,11 +1,13 @@
 module Fisica.MovEnemigo where
 
-import Linear.V2 (V2(..))
-import Linear.Metric (normalize, distance, norm)
-import Linear.Vector ((^*))
+-- Modulos del sistema
+import qualified SDL
+import qualified Linear.Metric as LM
+import qualified Linear.Vector as LV
 
-import Types
-import Fisica.Colisiones (checkColision)
+-- Modulos propios
+import qualified Types
+import qualified Fisica.Colisiones as FC
 
 friccion :: Float
 friccion = 0.90
@@ -13,47 +15,47 @@ friccion = 0.90
 umbralParada :: Float
 umbralParada = 0.5
 
-calcularDirEnemigo :: Enemigo -> Jugador -> V2 Float
+calcularDirEnemigo :: Types.Enemigo -> Types.Jugador -> SDL.V2 Float
 calcularDirEnemigo enemigoIni player =
-    let dist = distance (posEnemigo enemigoIni) (posJugador player)
-    in if dist < rangoVision enemigoIni
+    let dist = LM.distance (Types.posEnemigo enemigoIni) (Types.posJugador player)
+    in if dist < Types.rangoVision enemigoIni
        then 
            -- Si está cerca, perseguir
-           let diff = posJugador player - posEnemigo enemigoIni
-           in normalize diff ^* velEnemigo enemigoIni
+           let diff = Types.posJugador player - Types.posEnemigo enemigoIni
+           in LM.normalize diff LV.^* Types.velEnemigo enemigoIni
        else 
            -- Si está lejos, quedarse quieto (o patrullar)
-           V2 0 0
+           SDL.V2 0 0
 
 -- Mover al enemigo
-moverEnemigo :: Enemigo -> V2 Float -> [Obstaculo] -> Enemigo
+moverEnemigo :: Types.Enemigo -> SDL.V2 Float -> [Types.Obstaculo] -> Types.Enemigo
 moverEnemigo enemigoIni delta mapObstaculos = 
     let 
-        esEmpujado = norm (velGolpeE enemigoIni) > umbralParada
+        esEmpujado = LM.norm (Types.velGolpeE enemigoIni) > umbralParada
         
-        (V2 dx dy) = if esEmpujado 
-                     then velGolpeE enemigoIni
+        (SDL.V2 dx dy) = if esEmpujado 
+                     then Types.velGolpeE enemigoIni
                      else delta
-        currentPos = posEnemigo enemigoIni
+        currentPos = Types.posEnemigo enemigoIni
         
         -- Mover en X
-        posX = currentPos + V2 dx 0
-        enemyX = enemigoIni { posEnemigo = posX }
-        enemyResueltoX = if checkColision enemyX mapObstaculos 
+        posX = currentPos + SDL.V2 dx 0
+        enemyX = enemigoIni { Types.posEnemigo = posX }
+        enemyResueltoX = if FC.checkColision enemyX mapObstaculos 
                          then enemigoIni 
                          else enemyX
         
         -- Mover en Y
-        posResueltaX = posEnemigo enemyResueltoX
-        posY = posResueltaX + V2 0 dy
-        enemyY = enemyResueltoX { posEnemigo = posY }
+        posResueltaX = Types.posEnemigo enemyResueltoX
+        posY = posResueltaX + SDL.V2 0 dy
+        enemyY = enemyResueltoX { Types.posEnemigo = posY }
 
-        enemyFin = if checkColision enemyY mapObstaculos
+        enemyFin = if FC.checkColision enemyY mapObstaculos
                       then enemyResueltoX
                       else enemyY
 
         nuevoVelGolpe = if esEmpujado
-                        then velGolpeE enemigoIni ^* friccion
-                        else V2 0 0
+                        then Types.velGolpeE enemigoIni LV.^* friccion
+                        else SDL.V2 0 0
         
-    in enemyFin { velGolpeE = nuevoVelGolpe }
+    in enemyFin { Types.velGolpeE = nuevoVelGolpe }

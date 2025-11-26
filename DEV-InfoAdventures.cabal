@@ -18,13 +18,16 @@ executable DEV-InfoAdventures
 
     other-modules:
         Types
+        Inicio
         Juego
-        Camara
-        Items
-        Render
+        Utils
+        Mapas.Mapa
+        Graficos.Render
+        Graficos.Dibujado
+        Objetos.Items
+        Objetos.Camara
         Personajes.Jugador
         Personajes.Enemigo
-        Mapas.Mapa
         Fisica.Colisiones
         Fisica.MovJugador
         Fisica.MovEnemigo

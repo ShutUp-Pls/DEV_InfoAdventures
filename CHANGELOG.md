@@ -63,3 +63,17 @@
   * Se añade rebote al chocar con un enemigo para evitar spam en el daño a la vida.
 
    >*Nota*: Contra más grande el commit, más toca refactorizar despues.
+
+ ## 0.1.6.1 -- 2025-11-26
+  * Se separa la logica de la aplicación de Buffos con la adquisición de PowerUps.
+  * Se separa la logica de dibujado con la de renderizado.
+  * Se añade el tipo Buffos para manejar nombre en pantalla, tipo, valor y acumulabilidad.
+  * Se refactoriza el orden del repositorio:
+    * Directorio 'Objetos' para `Camara.hs` y `Items.hs`.
+    * Directorio 'Graficos' para `Dibujado.hs` y `Render.hs`.
+    * Archivo `Inicio.hs` para definir estados de inicio al iniciar el juego.
+    * Archivo `Utils.hs` para definir calculos utiles pero fuerza de contexto.
+  * Se estandariza la importación `import qualified Modulo` para modulos simples.
+  * Se estandariza la importación `import qualified Modulo.Sub as MS` para modulos con submodulos.
+
+   >*Nota*: Ya estaba empezando a ser un festival de nombres sin saber de donde venía que cosa. `Jugador.hs` quedó vacío tra desplegar la logica en distintos componentes.
