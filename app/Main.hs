@@ -13,16 +13,15 @@ import Types
 import Juego
 
 -- Configuración de ventana
+titulo :: Text
+titulo = "Juego full Haskell"
+
 screenWidth, screenHeight :: CInt
 screenWidth = 800
 screenHeight = 600
 
--- Calculamos el centro, necesario para alternar entre camaras
 screenCenter :: SDL.V2 Float
 screenCenter = SDL.V2 (fromIntegral screenWidth / 2) (fromIntegral screenHeight / 2)
-
-titulo :: Text
-titulo = "Juego full Haskell"
 
 main :: IO ()
 main = do
@@ -56,11 +55,11 @@ loop renderer currentState = do
     -- Mapear teclado al Input
     keyboardState <- SDL.getKeyboardState
     let input = Input
-          { up    = keyboardState SDL.ScancodeW
-          , down  = keyboardState SDL.ScancodeS
-          , left  = keyboardState SDL.ScancodeA
-          , right = keyboardState SDL.ScancodeD
-          , shift = keyboardState SDL.ScancodeLShift
+          { arriba     = keyboardState SDL.ScancodeW
+          , abajo      = keyboardState SDL.ScancodeS
+          , izquierda  = keyboardState SDL.ScancodeA
+          , derecha    = keyboardState SDL.ScancodeD
+          , shift      = keyboardState SDL.ScancodeLShift
           , decreaseDZ = keyboardState SDL.ScancodeO
           , increaseDZ = keyboardState SDL.ScancodeP
           }
@@ -82,8 +81,7 @@ toSDLRect (SDL.V2 x y) (SDL.V2 w h) =
 
 -- Gestiona la posición del mundo dependiendo del tipo de camara actual
 worldToScreen :: SDL.V2 Float -> SDL.V2 Float -> SDL.V2 Float
-worldToScreen worldPos camPos = 
-    worldPos - camPos + screenCenter
+worldToScreen worldPos camPos = worldPos - camPos + screenCenter
 
 -- Para efectos de testeo, dibujamos la DeadZone
 dibujarDeadzone :: SDL.Renderer -> SDL.V2 Float -> IO ()
@@ -106,15 +104,16 @@ dibujarObstaculo renderer camPos (Obstaculo pos size) = do
 renderGame :: SDL.Renderer -> GameState -> IO ()
 renderGame renderer gs = do
     let player = jugador gs
-    let pos  = posJugador player
-    let size = tamJugador player
+    let posJ   = posJugador player
+    let tamJ   = tamJugador player
 
     let enemy = enemigo gs
-    let ePos = posEnemigo enemy
-    let eTam = tamEnemigo enemy
+    let posE  = posEnemigo enemy
+    let tamE  = tamEnemigo enemy
 
-    let camPos = camaraPos gs
-    let dzSize = deadzoneSize gs
+    let cam    = camara gs
+    let camPos = posCamara cam
+    let dzSize = deadzoneSize cam
 
     -- Limpiar pantalla (Fondo negro)
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 0 0 0 255
@@ -124,14 +123,16 @@ renderGame renderer gs = do
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 100 100 100 255
     mapM_ (dibujarObstaculo renderer camPos) (mapa gs)
 
+    -- Dibujamos al enemigo
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 0 255 0 255
-    let enemyScreePos = worldToScreen ePos camPos
-    let enemySkin = toSDLRect enemyScreePos eTam
+    let enemyScreePos = worldToScreen posE camPos
+    let enemySkin = toSDLRect enemyScreePos tamE
     SDL.fillRect renderer (Just enemySkin)
 
+    -- Dibujamos al jugador
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 255 255 255 255
-    let playerScreenPos = worldToScreen pos camPos
-    let playerSkin = toSDLRect playerScreenPos size
+    let playerScreenPos = worldToScreen posJ camPos
+    let playerSkin = toSDLRect playerScreenPos tamJ
     SDL.fillRect renderer (Just playerSkin)
     
     -- Mostrar en pantalla

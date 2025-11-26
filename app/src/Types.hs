@@ -30,22 +30,27 @@ data Enemigo = Enemigo
     , rangoVision  :: Float
     } deriving (Show, Eq)
 
--- Estado Global del Juego
+-- Datos de la Camara
+data Camara = Camara
+    { posCamara    :: V2 Float
+    , deadzoneSize :: V2 Float
+    } deriving (Show, Eq)
+
+-- Datos del Juego en si
 data GameState = GameState
     { jugador :: Jugador
-    , enemigo      :: Enemigo
+    , enemigo :: Enemigo
     , mapa    :: Mapa
-    , camaraPos    :: V2 Float
-    , deadzoneSize :: V2 Float
+    , camara  :: Camara
     } deriving (Show, Eq)
 
 -- Inputs soportados
 data Input = Input
-    { up    :: Bool
-    , down  :: Bool
-    , left  :: Bool
-    , right :: Bool
-    , shift :: Bool
+    { arriba     :: Bool
+    , abajo      :: Bool
+    , izquierda  :: Bool
+    , derecha    :: Bool
+    , shift      :: Bool
     , decreaseDZ :: Bool
     , increaseDZ :: Bool
     } deriving (Show, Eq)

@@ -19,10 +19,13 @@ executable DEV-InfoAdventures
     other-modules:
         Types
         Juego
+        Camara
         Personajes.Jugador
         Personajes.Enemigo
         Mapas.Mapa
         Fisica.Colisiones
+        Fisica.MovJugador
+        Fisica.MovEnemigo
 
     build-depends:
         base ^>=4.17.2.0,

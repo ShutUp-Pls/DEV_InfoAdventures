@@ -41,3 +41,13 @@
 
 ## 0.1.5.0 -- 2025-11-26
  * Se implementa `Enemigo.hs`. Prototipo de enemigo con atributos propios y logica propia.
+
+## 0.1.5.1 -- 2025-11-26
+ * Refactorización de codigo.
+ * Ahora las logicas de movimiento de cada personaje viven en `MovEnemigo.hs` y `MovJugador.hs`
+ * Ahora las colisión caracteriza la clase 'Hitbox' para cada personaje.
+ * Se modifican nombres de variables y comentarios para mejor seguimiento del codigo.
+ * Se crea un tipo 'Camara' y su respectivo `Camara.hs` con toda la carga logica detras.
+ * Aliviamos la carga del monadeState del juego principal, delegando toda la logica de calculo a modulos externos, dejando en la monadeState solo la aplicación de estos mediante funciones.
+
+ >*Nota*: Poco a poco se me olvida que estamos ante un lenguaje de paradigma funcional. El manejo del lenguaje empieza a sentirse familiar.
