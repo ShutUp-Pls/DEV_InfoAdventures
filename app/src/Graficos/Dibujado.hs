@@ -11,10 +11,12 @@ import qualified Data.Text as DT
 import qualified Types
 import qualified Utils
 
+-- Configuración de Pantalla
 screenWidth, screenHeight :: FCT.CInt
 screenWidth = 800
 screenHeight = 600
 
+-- Calculamos el centrol
 screenCenter :: SDL.V2 Float
 screenCenter = SDL.V2 (fromIntegral screenWidth / 2) (fromIntegral screenHeight / 2)
 
@@ -47,7 +49,7 @@ dibujarHUD renderer font vida velocidad = do
     let txtVel = "Velocidad: " <> DT.pack (show velRedondeada)
     renderizarTexto txtVel 10 40
 
--- 
+-- Visión dinamica de los buffs en el HUD
 dibujarBuffs :: SDL.Renderer -> Font.Font -> [Types.Buff] -> IO ()
 dibujarBuffs renderer font buffs = do
     let startX = 10
@@ -82,11 +84,21 @@ dibujarDeadzone renderer (SDL.V2 w h) = do
     SDL.drawRect renderer (Just rect)
 
 -- Elementos del juego
-dibujarObstaculo :: SDL.Renderer -> SDL.V2 Float -> Types.Obstaculo -> IO ()
-dibujarObstaculo renderer camPos (Types.Obstaculo pos size) = do
+dibujarObstaculo :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Types.Obstaculo -> IO ()
+dibujarObstaculo renderer texture camPos (Types.Obstaculo pos size angle) = do
     let screenPos = worldToScreen pos camPos
     let rect = Utils.toSDLRect screenPos size
-    SDL.fillRect renderer (Just rect)
+    let angleCDouble = realToFrac angle :: FCT.CDouble
+
+    SDL.textureColorMod texture SDL.$= SDL.V3 100 100 100
+    SDL.copyEx renderer 
+                texture 
+                Nothing
+                (Just rect)
+                angleCDouble
+                Nothing
+                (SDL.V2 False False)
+    
 
 dibujarEnemigo :: SDL.Renderer -> SDL.V2 Float -> Types.Enemigo -> IO ()
 dibujarEnemigo renderer camPos enem = do

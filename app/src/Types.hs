@@ -6,8 +6,9 @@ import qualified Data.Text as DT
 
 -- Obstaculo de colisión para mapas
 data Obstaculo = Obstaculo
-    { posObstaculo  :: SDL.V2 Float
+    { posObstaculo :: SDL.V2 Float
     , tamObstaculo :: SDL.V2 Float
+    , angObstaculo :: Float
     } deriving (Show, Eq)
 
 -- Datos de un item en pantalla

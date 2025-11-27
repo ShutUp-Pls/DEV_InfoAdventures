@@ -10,8 +10,10 @@ import qualified Objetos.Camara as OC
 import qualified Objetos.Items as OI
 
 import qualified Fisica.Colisiones as FC
-import qualified Fisica.MovJugador as FMJ
 import qualified Fisica.MovEnemigo as FME
+
+import qualified Personajes.Jugador as PJ
+import qualified Personajes.Enemigo as PE
 
 -- La función principal de lógica usando monadState
 -- Modifica el estado del juego basado en el input.
@@ -31,7 +33,7 @@ updateGame input = do
     let (jugadorGolpeado, enemigosGolpeados) = FC.resolverCombate jugadorConBuffs enemigosList
 
     -- Actualizamos posicion del jugador
-    let jugadorFin = FMJ.moverJugador input jugadorGolpeado mapaActual
+    let jugadorFin = PJ.moverJugador input jugadorGolpeado mapaActual
 
     let itemsTocados   = FC.checkColisionsItems jugadorFin (Types.items gameState)
     let itemsRestantes = filter (\it -> not (it `elem` itemsTocados)) (Types.items gameState)
@@ -40,7 +42,7 @@ updateGame input = do
     -- Actualizamos posicion del enemigo
     let enemigosFin = map (\enemigo -> 
             let delta = FME.calcularDirEnemigo enemigo jugadorConPowerUps
-            in FME.moverEnemigo enemigo delta mapaActual
+            in PE.moverEnemigo enemigo delta mapaActual
          ) enemigosGolpeados
 
     -- Actualizamos la camara a partir del jugador final

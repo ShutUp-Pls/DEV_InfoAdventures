@@ -48,7 +48,7 @@
  * Ahora las colisión caracteriza la clase 'Hitbox' para cada personaje.
  * Se modifican nombres de variables y comentarios para mejor seguimiento del codigo.
  * Se crea un tipo 'Camara' y su respectivo `Camara.hs` con toda la carga logica detras.
- * Aliviamos la carga del monadeState del juego principal, delegando toda la logica de calculo a modulos externos, dejando en la monadeState solo la aplicación de estos mediante funciones.
+ * Aliviamos la carga del `monadeState` del juego principal, delegando toda la logica de calculo a modulos externos, dejando en la `monadeState` solo la aplicación de estos mediante funciones.
 
  >*Nota*: Poco a poco se me olvida que estamos ante un lenguaje de paradigma funcional. El manejo del lenguaje empieza a sentirse familiar.
 
@@ -77,3 +77,13 @@
   * Se estandariza la importación `import qualified Modulo.Sub as MS` para modulos con submodulos.
 
    >*Nota*: Ya estaba empezando a ser un festival de nombres sin saber de donde venía que cosa. `Jugador.hs` quedó vacío tra desplegar la logica en distintos componentes.
+
+ ## 0.1.7.0 -- 2025-11-26
+  * Se añade un 'mapeador' hecho en python para facilitar la integración de nuevos mapas.
+  * Se añade la capacidad a los rectangulos obstaculo de tener rotación y así tener diagonales en los mapas.
+  * Se cambia la logica de colisión simple el Teorema del Eje de Separación (SAT - Separating Axis Theorem) en `SAT.hs`. Esto para gestionar las colisiones con diagonales.
+  * Se añadé 2 `monadeState` en `MovJugador.hs` y `MovEnemigo.hs`
+  * Se vuelve a llenar `Jugador.hs` con los wrappers de las `monadeState`. Lo mismo con `Enemigo.hs`, expone una forma facil de acceder a una logica de estado.
+  * Se desacopla el calculo de un vector para seguir al jugador.
+
+   >*Nota*: Viendo las `monadeState` como orquestador de estados *("Me entregas algo en un estado y te lo devuelvo en otro")*, entonces son logicas totalmente encapsulables en su proposito propio y reunibles en archivos que pretendan reuinir todas las que sirvan para un proposito conjunto. JSAJDASJ ni yo me entendí pero en mi cabeza está genial.

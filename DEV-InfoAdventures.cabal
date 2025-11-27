@@ -28,6 +28,7 @@ executable DEV-InfoAdventures
         Objetos.Camara
         Personajes.Jugador
         Personajes.Enemigo
+        Fisica.SAT
         Fisica.Colisiones
         Fisica.MovJugador
         Fisica.MovEnemigo
