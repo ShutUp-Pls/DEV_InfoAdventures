@@ -4,6 +4,10 @@ module Types where
 import qualified SDL
 import qualified Data.Text as DT
 
+-- ==========================================
+-- DEFINICIÓN DE DATOS (DATA TYPES)
+-- ==========================================
+
 -- Obstaculo de colisión para mapas
 data Obstaculo = Obstaculo
     { posObstaculo :: SDL.V2 Float
@@ -84,3 +88,54 @@ data Input = Input
     , decreaseDZ :: Bool
     , increaseDZ :: Bool
     } deriving (Show, Eq)
+
+-- ==========================================
+-- CLASES DE TIPOS (INTERFACES)
+-- ==========================================
+
+-- Hitbox: Cosas que ocupan espacio
+class Hitbox a where
+    getPos :: a -> SDL.V2 Float
+    getTam :: a -> SDL.V2 Float
+    getAng :: a -> Float
+
+-- EntidadFisica: Cosas que se mueven y tienen física
+class Hitbox a => EntidadFisica a where
+    setPos      :: SDL.V2 Float -> a -> a
+    
+    getVelGolpe :: a -> SDL.V2 Float
+    setVelGolpe :: SDL.V2 Float -> a -> a
+
+-- ==========================================
+-- INSTANCIAS (IMPLEMENTACIÓN)
+-- ==========================================
+
+instance Hitbox Jugador where
+    getPos = posJugador
+    getTam = tamJugador
+    getAng _ = 0
+
+instance EntidadFisica Jugador where
+    setPos p j = j { posJugador = p }
+    getVelGolpe = velGolpeJ
+    setVelGolpe v j = j { velGolpeJ = v }
+
+instance Hitbox Enemigo where
+    getPos = posEnemigo
+    getTam = tamEnemigo
+    getAng _ = 0
+
+instance EntidadFisica Enemigo where
+    setPos p e = e { posEnemigo = p }
+    getVelGolpe = velGolpeE
+    setVelGolpe v e = e { velGolpeE = v }
+
+instance Hitbox Item where
+    getPos = posItem
+    getTam = tamItem
+    getAng _ = 0
+
+instance Hitbox Obstaculo where
+    getPos (Obstaculo p _ _) = p
+    getTam (Obstaculo _ s _) = s
+    getAng (Obstaculo _ _ a) = a

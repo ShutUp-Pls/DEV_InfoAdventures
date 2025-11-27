@@ -10,7 +10,6 @@ import qualified Objetos.Camara as OC
 import qualified Objetos.Items as OI
 
 import qualified Fisica.Colisiones as FC
-import qualified Fisica.MovEnemigo as FME
 
 import qualified Personajes.Jugador as PJ
 import qualified Personajes.Enemigo as PE
@@ -41,7 +40,7 @@ updateGame input = do
 
     -- Actualizamos posicion del enemigo
     let enemigosFin = map (\enemigo -> 
-            let delta = FME.calcularDirEnemigo enemigo jugadorConPowerUps
+            let delta = PE.calcularDirEnemigo enemigo jugadorConPowerUps
             in PE.moverEnemigo enemigo delta mapaActual
          ) enemigosGolpeados
 

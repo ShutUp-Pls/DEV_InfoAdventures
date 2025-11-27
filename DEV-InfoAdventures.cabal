@@ -30,8 +30,7 @@ executable DEV-InfoAdventures
         Personajes.Enemigo
         Fisica.SAT
         Fisica.Colisiones
-        Fisica.MovJugador
-        Fisica.MovEnemigo
+        Fisica.Movimiento
 
     build-depends:
         base ^>=4.17.2.0,

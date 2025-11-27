@@ -87,3 +87,8 @@
   * Se desacopla el calculo de un vector para seguir al jugador.
 
    >*Nota*: Viendo las `monadeState` como orquestador de estados *("Me entregas algo en un estado y te lo devuelvo en otro")*, entonces son logicas totalmente encapsulables en su proposito propio y reunibles en archivos que pretendan reuinir todas las que sirvan para un proposito conjunto. JSAJDASJ ni yo me entendí pero en mi cabeza está genial.
+
+ ## 0.1.8.0 -- 2025-11-26
+  * Aplicamos 'Resolución por Vector de Traslación Mínima (MTV)' para la logica de 'slicing' que antes estaba enfocada a colisiones verticales y horizontales, para ahora estar enofada a colisiones diagonales también a traves del SAT.
+  * Se unifica el movimiento en una única `monadeState` en `Movimiento.hs` y vuelven a `Jugador.hs` `Enemigo.hs` la logica especifica sobre los calculos previos (Que también son una `monadeState` - Esto está interesante para ser explicado en el README.md).
+  * Se eliminan `MovEnemigo.hs` y `MovJugador.hs`

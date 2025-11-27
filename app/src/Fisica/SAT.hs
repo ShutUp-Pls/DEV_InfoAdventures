@@ -1,8 +1,12 @@
 module Fisica.SAT where
 
+-- Módulos de sistema
 import qualified SDL
 import qualified Linear.Metric as LM
 import qualified Linear.Vector as LV
+import qualified Data.Maybe as DM
+import qualified Data.List as DL
+import qualified Data.Ord as DO
 
 -- Convierte grados a radianes
 degToRad :: Float -> Float
@@ -45,14 +49,29 @@ project axis corners =
     in (minimum dots, maximum dots)
 
 -- Verifica solapamiento en un eje específico
-overlap :: (Float, Float) -> (Float, Float) -> Bool
-overlap (minA, maxA) (minB, maxB) = 
-    not (maxA < minB || maxB < minA)
+overlapAmount :: (Float, Float) -> (Float, Float) -> Maybe Float
+overlapAmount (minA, maxA) (minB, maxB) = 
+    if maxA < minB || maxB < minA
+    then Nothing
+    else Just $ min (maxA - minB) (maxB - minA)
 
--- Solapamiento SAT
-satCollision :: SDL.V2 Float -> SDL.V2 Float -> Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> Bool
+-- Teorema del Eje de Separación con Resolución por Vector de Traslación Mínima (SAT con MTV)
+satCollision :: SDL.V2 Float -> SDL.V2 Float -> Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> Maybe (SDL.V2 Float)
 satCollision p1 s1 a1 p2 s2 a2 = 
     let c1 = getCorners p1 s1 a1
         c2 = getCorners p2 s2 a2
         axes = getAxes c1 ++ getAxes c2
-    in all (\axis -> overlap (project axis c1) (project axis c2)) axes
+        overlaps = map (\axis -> 
+            case overlapAmount (project axis c1) (project axis c2) of
+                Nothing -> Nothing
+                Just amt -> Just (axis, amt)
+            ) axes
+    in 
+    if any (== Nothing) overlaps 
+        then Nothing 
+        else 
+            let validOverlaps = DM.catMaybes overlaps
+                (axis, depth) = DL.minimumBy (DO.comparing snd) validOverlaps
+                dir = p1 - p2
+                normal = if LM.dot dir axis < 0 then axis LV.^* (-1) else axis
+            in Just (normal LV.^* depth)
