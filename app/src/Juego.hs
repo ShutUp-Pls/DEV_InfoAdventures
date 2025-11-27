@@ -39,11 +39,13 @@ updateGame input = do
     let jugadorConPowerUps = foldr (\it jug -> OI.aplicarEfecto (Types.tipoItem it) jug) jugadorFin itemsTocados
 
     -- Actualizamos posicion del enemigo
-    let enemigosFin = map (\enemigo -> 
+    let enemigosMovidos = map (\enemigo -> 
             let delta = PE.calcularDirEnemigo enemigo jugadorConPowerUps
-            -- AHORA pasamos 'jugadorConPowerUps' también a moverEnemigo para la rotación
             in PE.moverEnemigo enemigo delta mapaActual jugadorConPowerUps
          ) enemigosGolpeados
+
+    -- Aquí aplicamos la nueva lógica. Los enemigos se empujan suavemente entre sí.
+    let enemigosFin = FC.resolverColisionesEnemigos enemigosMovidos
 
     -- Actualizamos la camara a partir del jugador final
     let camaraFin = OC.actualizarCamara input jugadorConPowerUps camaraActual

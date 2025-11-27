@@ -3,37 +3,57 @@ module Personajes.Jugador where
 -- Modulos del sistema
 import SDL
 import qualified Linear.Metric as LM
+import qualified Linear.Vector as LV
 import qualified Control.Monad.State as CMS
+import Data.Fixed (mod')
 
 -- Modulos propios
 import qualified Types
-import qualified Utils
 import qualified Fisica.Movimiento as FM
+
+-- Función auxiliar para interpolar ángulos suavemente
+suavizarAngulo :: Float -> Float -> Float -> Float
+suavizarAngulo actual objetivo velocidad =
+    let 
+        diff = objetivo - actual
+        delta = (diff + 180) `mod'` 360 - 180
+    in 
+        if abs delta < velocidad
+        then objetivo
+        else actual + (signum delta * velocidad)
 
 actFisicasMovJugador :: Types.Input -> [Types.Obstaculo] -> CMS.State Types.Jugador ()
 actFisicasMovJugador input mapObstaculos = do
     jugador <- CMS.get
-    -- Calculamos input específico del jugador
+
+    let dirX = (if Types.derecha input then 1 else 0) - (if Types.izquierda input then 1 else 0)
+    let dirY = (if Types.abajo input then 1 else 0)  - (if Types.arriba input then 1 else 0)
+    let vecDireccion = SDL.V2 dirX dirY
+
     let velCor = Types.velCorrerJ jugador
         velCam = Types.velCaminarJ jugador
+        velRot = Types.velRotacion jugador
         factor = Types.velFactorJ jugador
-        velocidadInput = if Types.shift input
-                         then Utils.vectorInput input velCor factor 
-                         else Utils.vectorInput input velCam factor
-    -- Delegamos la física dura a la monadeState de movimiento [Esto está interesante explicarlo]
-    velFinal <- FM.resolverFisica velocidadInput mapObstaculos
+        velocidadBase = if Types.shift input then velCor else velCam
 
-    -- Si el jugador se mueve, actualizamos su ángulo. Si no, mantiene el último.
-    let nuevoAngulo = if velFinal == SDL.V2 0 0 
-                      then Types.angJugador jugador 
-                      else (atan2 (gettingY velFinal) (gettingX velFinal)) * (180 / pi)
+    let velocidadInput = if vecDireccion == SDL.V2 0 0 
+                         then SDL.V2 0 0 
+                         else LM.normalize vecDireccion LV.^* (velocidadBase * factor)
+
+    velFinal <- FM.resolverFisica velocidadInput mapObstaculos
+    let anguloActual = Types.angJugador jugador
+    let nuevoAngulo = if vecDireccion == SDL.V2 0 0
+                      then anguloActual
+                      else 
+                          let 
+                              rads = atan2 dirY dirX
+                              targetAng = rads * (180 / pi)
+                          in 
+                              suavizarAngulo anguloActual targetAng velRot
 
     CMS.modify $ \s -> s { Types.velJugador = LM.norm velFinal
                          , Types.angJugador = nuevoAngulo 
                          }
-  where
-    gettingX (SDL.V2 x _) = x
-    gettingY (SDL.V2 _ y) = y
 
 moverJugador :: Types.Input -> Types.Jugador -> [Types.Obstaculo] -> Types.Jugador
 moverJugador input jugadorIni mapObstaculos = 

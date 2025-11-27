@@ -12,14 +12,16 @@ import qualified Linear.Metric as LM
 
 crearEnemigo :: SDL.V2 Float -> Types.Enemigo
 crearEnemigo pos = Types.Enemigo
-    { Types.posEnemigo  = pos
-    , Types.tamEnemigo  = SDL.V2 30 30
-    , Types.velGolpeE   = SDL.V2 0 0
-    , Types.empujeE     = 5.0
-    , Types.velEnemigo  = 1.5
-    , Types.angEnemigo  = 0.0
-    , Types.vidEnemigo  = 100.0
-    , Types.rangoVision = 200.0
+    { Types.posEnemigo      = pos
+    , Types.tamEnemigo      = SDL.V2 30 30
+    , Types.velGolpeE       = SDL.V2 0 0
+    , Types.empujeE         = 5.0
+    , Types.velEnemigo      = 1.5
+    , Types.angEnemigo      = 0.0
+    , Types.vidEnemigo      = 100.0
+    , Types.rangoVision     = 200.0
+    , Types.radInterno      = 1.0
+    , Types.rechazoE        = 0.2
     }
 
 actFisicasMovEnemigo :: SDL.V2 Float -> [Types.Obstaculo] -> CMS.State Types.Enemigo ()

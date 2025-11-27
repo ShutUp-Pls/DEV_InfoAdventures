@@ -5,13 +5,15 @@ module Graficos.Dibujado where
 import qualified SDL
 import qualified SDL.Font as Font
 import qualified Foreign.C.Types as FCT
+import qualified Data.Vector.Storable as DVS
 import qualified Data.Text as DT
+import qualified Data.Word as DW
+import qualified Linear.Vector as LV
 
 -- Modulos propios
 import qualified Types
 import qualified Utils
 import qualified Objetos.Cono as OC
-import qualified Data.Vector.Storable as DVS
 
 -- Configuración de Pantalla
 screenWidth, screenHeight :: FCT.CInt
@@ -25,6 +27,21 @@ screenCenter = SDL.V2 (fromIntegral screenWidth / 2) (fromIntegral screenHeight 
 -- Convierte coordenadas del mundo a coordenadas de pantalla
 worldToScreen :: SDL.V2 Float -> SDL.V2 Float -> SDL.V2 Float
 worldToScreen worldPos camPos = worldPos - camPos + screenCenter
+
+dibujarEntidadRotada :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> SDL.V3 DW.Word8 -> IO ()
+dibujarEntidadRotada renderer texture camPos pos size angle (SDL.V3 r g b) = do
+    let screenPos = worldToScreen pos camPos
+    let rect = Utils.toSDLRect screenPos size
+    let angleDouble = realToFrac angle :: FCT.CDouble
+
+    SDL.textureColorMod texture SDL.$= SDL.V3 r g b
+    SDL.copyEx renderer 
+               texture 
+               Nothing 
+               (Just rect) 
+               angleDouble 
+               Nothing 
+               (SDL.V2 False False)
 
 -- HUD
 dibujarHUD :: SDL.Renderer -> Font.Font -> Float -> Float -> IO ()
@@ -102,13 +119,25 @@ dibujarObstaculo renderer texture camPos (Types.Obstaculo pos size angle) = do
                 (SDL.V2 False False)
     
 
-dibujarEnemigo :: SDL.Renderer -> SDL.V2 Float -> Types.Enemigo -> IO ()
-dibujarEnemigo renderer camPos enem = do
+dibujarEnemigo :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Types.Enemigo -> IO ()
+dibujarEnemigo renderer skinTexture camPos enem = do
     let posE = Types.posEnemigo enem
     let tamE = Types.tamEnemigo enem
-    let enemyScreePos = worldToScreen posE camPos
-    let enemySkin = Utils.toSDLRect enemyScreePos tamE
-    SDL.fillRect renderer (Just enemySkin)
+    let angE = Types.angEnemigo enem
+    dibujarEntidadRotada renderer skinTexture camPos posE tamE angE (SDL.V3 0 255 0)
+
+    let centroE = posE + (tamE LV.^* 0.5)
+    dibujarConoOutline renderer camPos centroE angE 100 45
+
+dibujarJugador :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Types.Jugador -> IO ()
+dibujarJugador renderer skinTexture camPos player = do
+    let posJ = Types.posJugador player
+    let tamJ = Types.tamJugador player
+    let angJ = Types.angJugador player
+    dibujarEntidadRotada renderer skinTexture camPos posJ tamJ angJ (SDL.V3 255 255 255)
+
+    let centroJ = posJ + (tamJ LV.^* 0.5)
+    dibujarConoOutline renderer camPos centroJ angJ 60 30
 
 dibujarItems :: SDL.Renderer -> SDL.V2 Float -> Types.Item -> IO ()
 dibujarItems renderer camPos item = do
@@ -120,22 +149,14 @@ dibujarItems renderer camPos item = do
 
 dibujarConoOutline :: SDL.Renderer -> SDL.V2 Float -> SDL.V2 Float -> Float -> Float -> Float -> IO ()
 dibujarConoOutline renderer camPos origen angulo longitud apertura = do
-    -- 1. Calculamos los vértices
     let verticesMundo = OC.calcularVerticesCono origen angulo longitud apertura
-    
-    -- 2. Transformamos a pantalla
     let verticesPantalla = map (`worldToScreen` camPos) verticesMundo
-    
-    -- 3. Convertimos a formato SDL Point
+
     let toP (SDL.V2 x y) = SDL.P (SDL.V2 (round x) (round y))
     let puntosSDL = map toP verticesPantalla
-
-    -- 4. Cerramos el ciclo (seguro)
     let puntosFinales = case puntosSDL of
             []     -> []
             (p1:_) -> puntosSDL ++ [p1]
 
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 255 255 0 255 
-    
-    -- USAMOS V.fromList AQUÍ
     SDL.drawLines renderer (DVS.fromList puntosFinales)

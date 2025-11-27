@@ -26,14 +26,15 @@ main = do
     font <- Font.load "assets/font.ttf" 24
     renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
     surface <- SDL.createRGBSurface (SDL.V2 1 1) SDL.RGB888
-    blockTexture <- SDL.createTextureFromSurface renderer surface
     
     -- Pintar la superficie de blanco y liberarla una vez creada la textura
     SDL.surfaceFillRect surface Nothing (SDL.V4 255 255 255 255)
+    blockTexture <- SDL.createTextureFromSurface renderer surface
+    skinTexture <- SDL.createTextureFromSurface renderer surface
     SDL.freeSurface surface
 
     -- Crear renderizado e iniciar loop con el estado inicial del juego
-    loop renderer font blockTexture Inicio.estadoInicial
+    loop renderer font blockTexture skinTexture Inicio.estadoInicial
 
     -- Limpiar al salir
     Font.free font
@@ -44,8 +45,8 @@ main = do
     SDL.quit
 
 -- El bucle principal
-loop :: SDL.Renderer -> Font.Font -> SDL.Texture -> Types.GameState -> IO ()
-loop renderer font blockTexture currentState = do
+loop :: SDL.Renderer -> Font.Font -> SDL.Texture -> SDL.Texture -> Types.GameState -> IO ()
+loop renderer font blockTexture skinTexture currentState = do
 
     -- Manejo de Eventos
     events <- SDL.pollEvents
@@ -68,8 +69,8 @@ loop renderer font blockTexture currentState = do
     let newState = CMS.execState (Juego.updateGame input) currentState
 
     -- Renderizado
-    RR.renderGame renderer font blockTexture newState
+    RR.renderGame renderer font blockTexture skinTexture newState
 
     -- Control de Frames y Recursión [1000ms/60fps=16.66...delay]
     SDL.delay 16
-    CM.unless quitEvent (loop renderer font blockTexture newState)
+    CM.unless quitEvent (loop renderer font blockTexture skinTexture newState)

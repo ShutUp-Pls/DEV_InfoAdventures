@@ -96,3 +96,8 @@
  ## 0.1.8.1 -- 2025-11-27
   * Se añade la renderización y calculo de conos de visión en el archivo `Conos.hs`.
   * Se dota a Enemigos y Jugador de angulo de dirección.
+
+ ## 0.1.8.2 -- 2025-11-27
+  * Ahora los enemigos y el jugador rotan su cuadrado a donde están mirando.
+  * La dirección del jugador cambia de un paradigma estatico a uno direccional.
+  * Ahora los enemigos colisionan entre ellos.

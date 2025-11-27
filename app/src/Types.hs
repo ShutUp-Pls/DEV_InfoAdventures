@@ -30,7 +30,7 @@ data TipoItem
     | Puntos Float
     deriving (Show, Eq)
 
--- Un Buff activo en el jugador
+-- Datos del Buff activo en el jugador
 data Buff = Buff 
     { buffNombre   :: DT.Text
     , buffEtiqueta :: DT.Text
@@ -44,10 +44,13 @@ data Jugador = Jugador
     , tamJugador  :: SDL.V2 Float
     , velGolpeJ   :: SDL.V2 Float
     , empujeJ     :: Float
+
+    , velRotacion :: Float
     , velJugador  :: Float
     , velCorrerJ  :: Float
     , velCaminarJ :: Float
     , velFactorJ  :: Float
+
     , vidJugador  :: Float
     , angJugador  :: Float
     , buffsActivos :: [Buff]
@@ -59,10 +62,14 @@ data Enemigo = Enemigo
     , tamEnemigo   :: SDL.V2 Float
     , velGolpeE    :: SDL.V2 Float
     , empujeE      :: Float
+
     , velEnemigo   :: Float
     , vidEnemigo   :: Float
     , angEnemigo   :: Float
     , rangoVision  :: Float
+    , radInterno   :: Float
+    , rechazoE     :: Float
+
     } deriving (Show, Eq)
 
 -- Datos de la Camara

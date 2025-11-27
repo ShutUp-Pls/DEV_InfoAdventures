@@ -71,3 +71,43 @@ logicaColision enem (jActual, enemigosProcesados) =
 resolverCombate :: Types.Jugador -> [Types.Enemigo] -> (Types.Jugador, [Types.Enemigo])
 resolverCombate jug enemigosList = 
     foldr logicaColision (jug, []) enemigosList
+
+aplicarSeparacion :: [Types.Enemigo] -> Types.Enemigo -> Types.Enemigo
+aplicarSeparacion todos miEnemigo =
+    let 
+        miPos   = Types.posEnemigo miEnemigo
+        miRad   = Types.radInterno miEnemigo
+        rechazo = Types.rechazoE miEnemigo
+        miRadio = (let (SDL.V2 w h) = Types.tamEnemigo miEnemigo in (w + h) / 2) * miRad
+        
+        -- Calculamos el vector de empuje acumulado de todos los vecinos cercanos
+        empujeTotal = foldr (\otroEnemigo acc -> 
+            if otroEnemigo == miEnemigo 
+            then acc 
+            else
+                let 
+                    otroPos = Types.posEnemigo otroEnemigo
+                    otroRadio = (let (SDL.V2 w h) = Types.tamEnemigo otroEnemigo in (w + h) / 2) * miRad
+                    
+                    distanciaMinima = miRadio + otroRadio
+                    vectorDif = miPos - otroPos
+                    distancia = LM.norm vectorDif
+                in
+                    -- Si están demasiado cerca (pero no son el mismo punto exacto)
+                    if distancia < distanciaMinima && distancia > 0
+                    then 
+                        let 
+                            -- Cuanto más cerca, más fuerte el empuje
+                            penetracion = distanciaMinima - distancia
+                            direccion = LM.normalize vectorDif
+                        in 
+                            acc + (direccion LV.^* penetracion)
+                    else acc
+            ) (SDL.V2 0 0) todos
+        -- Aplicamos el empuje suavemente a la posición actual
+    in 
+        miEnemigo { Types.posEnemigo = miPos + (empujeTotal LV.^* rechazo) }
+
+resolverColisionesEnemigos :: [Types.Enemigo] -> [Types.Enemigo]
+resolverColisionesEnemigos listaEnemigos =
+    map (aplicarSeparacion listaEnemigos) listaEnemigos
