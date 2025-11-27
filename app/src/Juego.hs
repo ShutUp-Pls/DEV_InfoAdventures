@@ -41,7 +41,8 @@ updateGame input = do
     -- Actualizamos posicion del enemigo
     let enemigosFin = map (\enemigo -> 
             let delta = PE.calcularDirEnemigo enemigo jugadorConPowerUps
-            in PE.moverEnemigo enemigo delta mapaActual
+            -- AHORA pasamos 'jugadorConPowerUps' también a moverEnemigo para la rotación
+            in PE.moverEnemigo enemigo delta mapaActual jugadorConPowerUps
          ) enemigosGolpeados
 
     -- Actualizamos la camara a partir del jugador final

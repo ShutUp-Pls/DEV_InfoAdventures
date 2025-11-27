@@ -92,3 +92,7 @@
   * Aplicamos 'Resolución por Vector de Traslación Mínima (MTV)' para la logica de 'slicing' que antes estaba enfocada a colisiones verticales y horizontales, para ahora estar enofada a colisiones diagonales también a traves del SAT.
   * Se unifica el movimiento en una única `monadeState` en `Movimiento.hs` y vuelven a `Jugador.hs` `Enemigo.hs` la logica especifica sobre los calculos previos (Que también son una `monadeState` - Esto está interesante para ser explicado en el README.md).
   * Se eliminan `MovEnemigo.hs` y `MovJugador.hs`
+
+ ## 0.1.8.1 -- 2025-11-27
+  * Se añade la renderización y calculo de conos de visión en el archivo `Conos.hs`.
+  * Se dota a Enemigos y Jugador de angulo de dirección.

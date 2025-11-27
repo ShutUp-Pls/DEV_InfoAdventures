@@ -41,26 +41,28 @@ data Buff = Buff
 -- Datos del Jugador
 data Jugador = Jugador
     { posJugador  :: SDL.V2 Float
+    , tamJugador  :: SDL.V2 Float
+    , velGolpeJ   :: SDL.V2 Float
+    , empujeJ     :: Float
     , velJugador  :: Float
     , velCorrerJ  :: Float
     , velCaminarJ :: Float
     , velFactorJ  :: Float
     , vidJugador  :: Float
-    , tamJugador  :: SDL.V2 Float
-    , empujeJ     :: Float
-    , velGolpeJ   :: SDL.V2 Float
+    , angJugador  :: Float
     , buffsActivos :: [Buff]
     } deriving (Show, Eq)
 
 -- Datos del Enemigo
 data Enemigo = Enemigo
     { posEnemigo   :: SDL.V2 Float
+    , tamEnemigo   :: SDL.V2 Float
+    , velGolpeE    :: SDL.V2 Float
+    , empujeE      :: Float
     , velEnemigo   :: Float
     , vidEnemigo   :: Float
-    , tamEnemigo   :: SDL.V2 Float
+    , angEnemigo   :: Float
     , rangoVision  :: Float
-    , empujeE      :: Float
-    , velGolpeE    :: SDL.V2 Float
     } deriving (Show, Eq)
 
 -- Datos de la Camara
@@ -113,7 +115,7 @@ class Hitbox a => EntidadFisica a where
 instance Hitbox Jugador where
     getPos = posJugador
     getTam = tamJugador
-    getAng _ = 0
+    getAng = angJugador
 
 instance EntidadFisica Jugador where
     setPos p j = j { posJugador = p }
@@ -123,7 +125,7 @@ instance EntidadFisica Jugador where
 instance Hitbox Enemigo where
     getPos = posEnemigo
     getTam = tamEnemigo
-    getAng _ = 0
+    getAng = angEnemigo
 
 instance EntidadFisica Enemigo where
     setPos p e = e { posEnemigo = p }

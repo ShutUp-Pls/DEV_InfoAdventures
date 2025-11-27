@@ -11,15 +11,16 @@ import qualified Mapas.Mapa as MM
 nuevoJugador :: TP.Jugador
 nuevoJugador = TP.Jugador
     { TP.posJugador   = SDL.V2 400 300
+    , TP.tamJugador   = SDL.V2 30.0 30.0
+    , TP.velGolpeJ    = SDL.V2 0 0
+    , TP.empujeJ      = 10.0
     , TP.velJugador   = 3.0
+    , TP.angJugador   = 0.0
     , TP.buffsActivos = []
     , TP.velCaminarJ  = 3.0
     , TP.velCorrerJ   = 6.0
     , TP.velFactorJ   = 1.0
     , TP.vidJugador   = 100.0
-    , TP.tamJugador   = SDL.V2 30.0 30.0
-    , TP.empujeJ      = 10.0
-    , TP.velGolpeJ    = SDL.V2 0 0
     }
 
 enemigosIniciales :: [TP.Enemigo]

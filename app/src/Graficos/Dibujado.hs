@@ -10,6 +10,8 @@ import qualified Data.Text as DT
 -- Modulos propios
 import qualified Types
 import qualified Utils
+import qualified Objetos.Cono as OC
+import qualified Data.Vector.Storable as DVS
 
 -- Configuración de Pantalla
 screenWidth, screenHeight :: FCT.CInt
@@ -115,3 +117,25 @@ dibujarItems renderer camPos item = do
     let itemScreePos = worldToScreen posI camPos
     let itemSkin = Utils.toSDLRect itemScreePos tamI
     SDL.fillRect renderer (Just itemSkin)
+
+dibujarConoOutline :: SDL.Renderer -> SDL.V2 Float -> SDL.V2 Float -> Float -> Float -> Float -> IO ()
+dibujarConoOutline renderer camPos origen angulo longitud apertura = do
+    -- 1. Calculamos los vértices
+    let verticesMundo = OC.calcularVerticesCono origen angulo longitud apertura
+    
+    -- 2. Transformamos a pantalla
+    let verticesPantalla = map (`worldToScreen` camPos) verticesMundo
+    
+    -- 3. Convertimos a formato SDL Point
+    let toP (SDL.V2 x y) = SDL.P (SDL.V2 (round x) (round y))
+    let puntosSDL = map toP verticesPantalla
+
+    -- 4. Cerramos el ciclo (seguro)
+    let puntosFinales = case puntosSDL of
+            []     -> []
+            (p1:_) -> puntosSDL ++ [p1]
+
+    SDL.rendererDrawColor renderer SDL.$= SDL.V4 255 255 0 255 
+    
+    -- USAMOS V.fromList AQUÍ
+    SDL.drawLines renderer (DVS.fromList puntosFinales)
