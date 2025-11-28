@@ -101,3 +101,8 @@
   * Ahora los enemigos y el jugador rotan su cuadrado a donde están mirando.
   * La dirección del jugador cambia de un paradigma estatico a uno direccional.
   * Ahora los enemigos colisionan entre ellos.
+
+ ## 0.1.8.3 -- 2025-11-27
+  * Refactorización de `src`. Ahora no se encuentra al interior de app.
+
+  >*Nota*: Puede parecer una actualización sin importancia, pero fue el resultado de intentar generar un motor grafico por si solo. No resultó, pero me quedo con el movimiento de la carpeta.

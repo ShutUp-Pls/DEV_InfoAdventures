@@ -148,3 +148,4 @@ instance Hitbox Obstaculo where
     getPos (Obstaculo p _ _) = p
     getTam (Obstaculo _ s _) = s
     getAng (Obstaculo _ _ a) = a
+
