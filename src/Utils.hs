@@ -5,14 +5,15 @@ import qualified SDL
 import qualified Foreign.C.Types as FCT
 import qualified Linear.Metric as LM
 import qualified Linear.Vector as LV
+import qualified Data.Fixed as DF
 
 -- Módulos propios
 import qualified Types
 
 -- Convertir coordenadas de Float a Rectangulo CInt
 toSDLRect :: SDL.V2 Float -> SDL.V2 Float -> SDL.Rectangle FCT.CInt
-toSDLRect (SDL.V2 x y) (SDL.V2 w h) = 
-    SDL.Rectangle (SDL.P (SDL.V2 (round x) (round y))) (SDL.V2 (round w) (round h))
+toSDLRect (SDL.V2 x y) (SDL.V2 w h) = SDL.Rectangle (SDL.P (SDL.V2 (round x) (round y))) (SDL.V2 (round w) (round h))
+    
 
 -- Calculamos un vector normalizado a partir de los input del teclado
 vectorInput :: Types.Input -> Float -> Float -> SDL.V2 Float
@@ -34,3 +35,24 @@ vectorHacia posOrigen posDestino magnitud =
     in if direccion == SDL.V2 0 0 -- Evitar división por cero si ya llegó
        then SDL.V2 0 0
        else LM.normalize direccion LV.^* magnitud
+
+suavizarAngulo :: Float -> Float -> Float -> Float
+suavizarAngulo actual objetivo velocidad =
+    let 
+        diff = objetivo - actual
+        delta = (diff + 180) `DF.mod'` 360 - 180
+    in 
+        if abs delta < velocidad
+        then objetivo
+        else actual + (signum delta * velocidad)
+
+anguloAVector :: Float -> SDL.V2 Float
+anguloAVector grados = 
+    let radianes = grados * (pi / 180.0)
+    in SDL.V2 (cos radianes) (sin radianes)
+
+calcularAnguloHacia :: SDL.V2 Float -> SDL.V2 Float -> Float
+calcularAnguloHacia origen destino =
+    let direccion = destino - origen
+        (SDL.V2 dx dy) = direccion
+    in atan2 dy dx * (180 / pi)

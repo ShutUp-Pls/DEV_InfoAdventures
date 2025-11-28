@@ -2,10 +2,12 @@
 module Objetos.Items where
 
 -- Modulos del sistema
+import qualified SDL
 import qualified Data.List as DL
 
 -- Modulos propios
 import qualified Types
+import qualified Graficos.Dibujado as GD
 
 -- Helper para gestionar la lista de buffs
 agregarBuff :: Types.Buff -> Bool -> [Types.Buff] -> [Types.Buff]
@@ -49,3 +51,17 @@ procesarBuffs dt jug =
             (b:_) -> Types.buffValor b
             
     in jug { Types.buffsActivos = buffsVivos, Types.velFactorJ = nuevoFactor }
+
+dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Types.Item -> IO ()
+dibujar renderer texture camPos item = do
+    let posI = Types.posItem item
+    let tamI = Types.tamItem item
+    let angI = Types.angItem item 
+    
+    -- La lógica de color vive aquí, donde pertenece
+    let color = case Types.tipoItem item of
+            Types.Vida _       -> SDL.V3 255 0 0     -- Rojo
+            Types.Velocidad {} -> SDL.V3 0 0 255     -- Azul
+            Types.Puntos _     -> SDL.V3 255 255 0   -- Amarillo
+
+    GD.dibujarTextura renderer texture camPos posI tamI angI color

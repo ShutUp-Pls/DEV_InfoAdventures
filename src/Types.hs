@@ -13,12 +13,15 @@ data Obstaculo = Obstaculo
     { posObstaculo :: SDL.V2 Float
     , tamObstaculo :: SDL.V2 Float
     , angObstaculo :: Float
+    
     } deriving (Show, Eq)
 
 -- Datos de un item en pantalla
 data Item = Item
     { posItem  :: SDL.V2 Float
     , tamItem  :: SDL.V2 Float
+    , angItem  :: Float
+
     , tipoItem :: TipoItem
     , activo   :: Bool
     } deriving (Show, Eq)
@@ -42,6 +45,8 @@ data Buff = Buff
 data Jugador = Jugador
     { posJugador  :: SDL.V2 Float
     , tamJugador  :: SDL.V2 Float
+    , angJugador  :: Float
+
     , velGolpeJ   :: SDL.V2 Float
     , empujeJ     :: Float
 
@@ -52,7 +57,6 @@ data Jugador = Jugador
     , velFactorJ  :: Float
 
     , vidJugador  :: Float
-    , angJugador  :: Float
     , buffsActivos :: [Buff]
     } deriving (Show, Eq)
 
@@ -60,16 +64,16 @@ data Jugador = Jugador
 data Enemigo = Enemigo
     { posEnemigo   :: SDL.V2 Float
     , tamEnemigo   :: SDL.V2 Float
+    , angEnemigo   :: Float
+
     , velGolpeE    :: SDL.V2 Float
     , empujeE      :: Float
 
     , velEnemigo   :: Float
     , vidEnemigo   :: Float
-    , angEnemigo   :: Float
     , rangoVision  :: Float
     , radInterno   :: Float
     , rechazoE     :: Float
-
     } deriving (Show, Eq)
 
 -- Datos de la Camara
@@ -142,7 +146,7 @@ instance EntidadFisica Enemigo where
 instance Hitbox Item where
     getPos = posItem
     getTam = tamItem
-    getAng _ = 0
+    getAng = angItem
 
 instance Hitbox Obstaculo where
     getPos (Obstaculo p _ _) = p

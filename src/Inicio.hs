@@ -34,9 +34,9 @@ enemigosIniciales =
 
 itemsIniciales :: [Types.Item]
 itemsIniciales = 
-    [ Types.Item (SDL.V2 300 300) (SDL.V2 20 20) (Types.Vida 10) True
-    , Types.Item (SDL.V2 500 100) (SDL.V2 20 20) (Types.Velocidad 2.0 5.0 True) True
-    , Types.Item (SDL.V2 600 100) (SDL.V2 20 20) (Types.Velocidad 3.0 3.0 False) True
+    [ Types.Item (SDL.V2 300 300) (SDL.V2 20 20) 0 (Types.Vida 10) True
+    , Types.Item (SDL.V2 500 100) (SDL.V2 20 20) 0 (Types.Velocidad 2.0 5.0 True) True
+    , Types.Item (SDL.V2 600 100) (SDL.V2 20 20) 0 (Types.Velocidad 3.0 3.0 False) True
     ]
 
 estadoInicial :: Types.GameState

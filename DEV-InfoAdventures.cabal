@@ -22,11 +22,13 @@ executable DEV-InfoAdventures
         Juego
         Utils
         Mapas.Mapa
-        Graficos.Render
         Graficos.Dibujado
-        Objetos.Items
+        Graficos.Render
         Objetos.Camara
         Objetos.Cono
+        Objetos.HUD
+        Objetos.Items
+        Objetos.Obstaculo
         Personajes.Jugador
         Personajes.Enemigo
         Fisica.SAT

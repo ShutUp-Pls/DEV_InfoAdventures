@@ -3,12 +3,15 @@ module Personajes.Enemigo where
 -- Modulos del sitema
 import qualified SDL
 import qualified Control.Monad.State as CMS
+import qualified Linear.Metric as LM
+import qualified Linear.Vector as LV
 
 -- Modulos propios
 import qualified Types
 import qualified Utils
 import qualified Fisica.Movimiento as FM
-import qualified Linear.Metric as LM
+import qualified Graficos.Dibujado as GD
+import qualified Objetos.Cono as OC
 
 crearEnemigo :: SDL.V2 Float -> Types.Enemigo
 crearEnemigo pos = Types.Enemigo
@@ -25,9 +28,8 @@ crearEnemigo pos = Types.Enemigo
     }
 
 actFisicasMovEnemigo :: SDL.V2 Float -> [Types.Obstaculo] -> CMS.State Types.Enemigo ()
-actFisicasMovEnemigo delta mapObstaculos = do
-    -- El enemigo no tiene lógica extra post-movimiento, así que solo ejecutamos y descartamos el resultado
-    _ <- FM.resolverFisica delta mapObstaculos
+actFisicasMovEnemigo velocidad mapObstaculos = do
+    _ <- FM.resolverFisica velocidad mapObstaculos
     return ()
 
 calcularDirEnemigo :: Types.Enemigo -> Types.Jugador -> SDL.V2 Float
@@ -37,22 +39,41 @@ calcularDirEnemigo enemigo player =
         dist = LM.distance posE posJ
         rango = Types.rangoVision enemigo
     in if dist < rango
-       then Utils.vectorHacia posE posJ (Types.velEnemigo enemigo)
+       then SDL.V2 1 0
        else SDL.V2 0 0
-
-calcularAnguloHacia :: SDL.V2 Float -> SDL.V2 Float -> Float
-calcularAnguloHacia origen destino =
-    let direccion = destino - origen
-        (SDL.V2 dx dy) = direccion
-    in atan2 dy dx * (180 / pi) -- Retorna grados
 
 moverEnemigo :: Types.Enemigo -> SDL.V2 Float -> [Types.Obstaculo] -> Types.Jugador -> Types.Enemigo
 moverEnemigo enemigoIni delta mapObstaculos player = 
     let 
-        -- 1. Resolvemos física (posición)
-        enemigoMovido = CMS.execState (actFisicasMovEnemigo delta mapObstaculos) enemigoIni
+        posE = Types.posEnemigo enemigoIni
+        posJ = Types.posJugador player
+        angActual = Types.angEnemigo enemigoIni
+        rotSpeed = 15.0
+        speed    = Types.velEnemigo enemigoIni
+        shouldMove = delta /= SDL.V2 0 0
+        targetAng = Utils.calcularAnguloHacia posE posJ
+        nuevoAngulo = if shouldMove
+                      then Utils.suavizarAngulo angActual targetAng rotSpeed
+                      else angActual
+
+        forwardDir = Utils.anguloAVector nuevoAngulo
         
-        -- 2. Resolvemos rotación (Mirar al jugador)
-        nuevoAngulo = calcularAnguloHacia (Types.posEnemigo enemigoMovido) (Types.posJugador player)
+        velocity = if shouldMove
+                   then forwardDir LV.^* speed
+                   else SDL.V2 0 0
+
+        enemigoMovido = CMS.execState (actFisicasMovEnemigo velocity mapObstaculos) enemigoIni
+
     in
         enemigoMovido { Types.angEnemigo = nuevoAngulo }
+
+dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Types.Enemigo -> IO ()
+dibujar renderer skinTexture camPos enem = do
+    let posE = Types.posEnemigo enem
+    let tamE = Types.tamEnemigo enem
+    let angE = Types.angEnemigo enem
+
+    GD.dibujarTextura renderer skinTexture camPos posE tamE angE (SDL.V3 0 255 0)
+
+    let centroE = posE + (tamE LV.^* 0.5)
+    OC.dibujarConoOutline renderer skinTexture camPos centroE angE 100 45

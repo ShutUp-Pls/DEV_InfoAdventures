@@ -5,22 +5,13 @@ import SDL
 import qualified Linear.Metric as LM
 import qualified Linear.Vector as LV
 import qualified Control.Monad.State as CMS
-import Data.Fixed (mod')
 
 -- Modulos propios
 import qualified Types
+import qualified Utils
+import qualified Graficos.Dibujado as GD
 import qualified Fisica.Movimiento as FM
-
--- Función auxiliar para interpolar ángulos suavemente
-suavizarAngulo :: Float -> Float -> Float -> Float
-suavizarAngulo actual objetivo velocidad =
-    let 
-        diff = objetivo - actual
-        delta = (diff + 180) `mod'` 360 - 180
-    in 
-        if abs delta < velocidad
-        then objetivo
-        else actual + (signum delta * velocidad)
+import qualified Objetos.Cono as OC 
 
 actFisicasMovJugador :: Types.Input -> [Types.Obstaculo] -> CMS.State Types.Jugador ()
 actFisicasMovJugador input mapObstaculos = do
@@ -49,7 +40,7 @@ actFisicasMovJugador input mapObstaculos = do
                               rads = atan2 dirY dirX
                               targetAng = rads * (180 / pi)
                           in 
-                              suavizarAngulo anguloActual targetAng velRot
+                              Utils.suavizarAngulo anguloActual targetAng velRot
 
     CMS.modify $ \s -> s { Types.velJugador = LM.norm velFinal
                          , Types.angJugador = nuevoAngulo 
@@ -58,3 +49,16 @@ actFisicasMovJugador input mapObstaculos = do
 moverJugador :: Types.Input -> Types.Jugador -> [Types.Obstaculo] -> Types.Jugador
 moverJugador input jugadorIni mapObstaculos = 
     CMS.execState (actFisicasMovJugador input mapObstaculos) jugadorIni
+
+dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Types.Jugador -> IO ()
+dibujar renderer skinTexture camPos player = do
+    let posJ = Types.posJugador player
+    let tamJ = Types.tamJugador player
+    let angJ = Types.angJugador player
+    
+    -- Dibujamos la textura base (Blanco)
+    GD.dibujarTextura renderer skinTexture camPos posJ tamJ angJ (SDL.V3 255 255 255)
+
+    -- Debug outline (Visión)
+    let centroJ = posJ + (tamJ LV.^* 0.5)
+    OC.dibujarConoOutline renderer skinTexture camPos centroJ angJ 60 30

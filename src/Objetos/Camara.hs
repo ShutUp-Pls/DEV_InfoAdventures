@@ -5,6 +5,7 @@ import qualified SDL
 
 -- Modulos propios
 import qualified Types
+import qualified Graficos.Dibujado as GD
 
 -- Función pura para actualizar el valor de la camara en el monadeState
 actualizarCamara :: Types.Input -> Types.Jugador -> Types.Camara -> Types.Camara
@@ -49,3 +50,23 @@ actualizarCamara input target camActual = camActual { Types.posCamara = finalCam
         | (diffY + pH) > limitY = newCamX + SDL.V2 0 ((diffY + pH) - limitY)
         | diffY < -limitY       = newCamX + SDL.V2 0 (diffY + limitY)
         | otherwise             = newCamX
+
+dibujarDeadzone :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> IO ()
+dibujarDeadzone renderer texture (SDL.V2 w h) = do
+    let x = (fromIntegral GD.screenWidth - w) / 2
+    let y = (fromIntegral GD.screenHeight - h) / 2
+    
+    -- Definimos las 4 esquinas en coordenadas de pantalla
+    let tl = SDL.V2 x y
+    let tr = SDL.V2 (x + w) y
+    let br = SDL.V2 (x + w) (y + h)
+    let bl = SDL.V2 x (y + h)
+    
+    let color = SDL.V3 255 0 0 -- Rojo
+    let grosor = 2
+    let uiCam = GD.screenCenter 
+
+    GD.dibujarLinea renderer texture uiCam tl tr grosor color
+    GD.dibujarLinea renderer texture uiCam tr br grosor color
+    GD.dibujarLinea renderer texture uiCam br bl grosor color
+    GD.dibujarLinea renderer texture uiCam bl tl grosor color

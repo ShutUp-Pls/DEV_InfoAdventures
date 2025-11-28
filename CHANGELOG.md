@@ -106,3 +106,11 @@
   * Refactorización de `src`. Ahora no se encuentra al interior de app.
 
   >*Nota*: Puede parecer una actualización sin importancia, pero fue el resultado de intentar generar un motor grafico por si solo. No resultó, pero me quedo con el movimiento de la carpeta.
+
+ ## 0.1.9.0 -- 2025-11-28
+  * Se generaliza el uso de `copyEx` para el renderizado de rectangulos con textura por su eficiencia grafica.
+  * Se refactoriza el dibujado y se le devuelve a cada archivo que pretende describir un objeto
+    * Se crear `HUD.hs` y `Obstaculo.hs` para cumplir con lo anterior
+  * Ahora los enemigos no te siguen con la mirada en todo momento.
+  * Ahora los enemigos tienen las misma gestión de movimiento estilo tanque del jugador (Rotar -> Mover)
+  
