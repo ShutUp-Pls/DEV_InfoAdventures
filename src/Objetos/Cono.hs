@@ -28,8 +28,8 @@ calcularVerticesCono origen anguloCentral longitud apertura =
     in
         [origen, puntoIzq, puntoDer]
 
-dibujarConoOutline :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> SDL.V2 Float -> Float -> Float -> Float -> IO ()
-dibujarConoOutline renderer texture camPos origen angulo longitud apertura = do
+dibujarConoOutline :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> SDL.V2 Float -> Float -> Float -> Float -> IO ()
+dibujarConoOutline renderer texture camPos zoom origen angulo longitud apertura = do
     -- Obtenemos vertices en coordenadas de MUNDO
     let verticesMundo = calcularVerticesCono origen angulo longitud apertura
     
@@ -41,7 +41,7 @@ dibujarConoOutline renderer texture camPos origen angulo longitud apertura = do
         conectarPuntos [_] = return ()
         conectarPuntos (p1:p2:ps) = do
             -- Pasamos camPos a la linea
-            GD.dibujarLinea renderer texture camPos p1 p2 grosor color 
+            GD.dibujarLinea renderer texture camPos zoom p1 p2 grosor color 
             conectarPuntos (p2:ps)
 
     conectarPuntos verticesMundo
@@ -50,6 +50,6 @@ dibujarConoOutline renderer texture camPos origen angulo longitud apertura = do
     case verticesMundo of
         (pOrigin:rest) -> 
             case reverse rest of
-               (pLast:_) -> GD.dibujarLinea renderer texture camPos pLast pOrigin grosor color
+               (pLast:_) -> GD.dibujarLinea renderer texture camPos zoom pLast pOrigin grosor color
                [] -> return ()
         [] -> return ()

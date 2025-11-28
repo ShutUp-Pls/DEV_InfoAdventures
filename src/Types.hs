@@ -3,10 +3,7 @@ module Types where
 -- Módulos del sistema
 import qualified SDL
 import qualified Data.Text as DT
-
--- ==========================================
--- DEFINICIÓN DE DATOS (DATA TYPES)
--- ==========================================
+import qualified System.Random as SR
 
 -- Obstaculo de colisión para mapas
 data Obstaculo = Obstaculo
@@ -14,6 +11,22 @@ data Obstaculo = Obstaculo
     , tamObstaculo :: SDL.V2 Float
     , angObstaculo :: Float
     
+    } deriving (Show, Eq)
+
+data SpawnType 
+    = SpawnEnemigo Enemigo
+    | SpawnItem TipoItem
+    deriving (Show, Eq)
+
+data Spawner = Spawner
+    { posSpawner   :: SDL.V2 Float
+    , tamSpawner   :: SDL.V2 Float
+    , angSpawner   :: Float
+    
+    , areaSpawn    :: Float
+    , tipoSpawn    :: SpawnType
+    , rangoTiempo  :: (Float, Float)
+    , tiempoActual :: Float
     } deriving (Show, Eq)
 
 -- Datos de un item en pantalla
@@ -74,12 +87,15 @@ data Enemigo = Enemigo
     , rangoVision  :: Float
     , radInterno   :: Float
     , rechazoE     :: Float
+    , veJugador    :: Bool
     } deriving (Show, Eq)
 
 -- Datos de la Camara
 data Camara = Camara
     { posCamara    :: SDL.V2 Float
     , deadzoneSize :: SDL.V2 Float
+    , zoomLevel    :: Float
+    , zoomBase     :: Float
     } deriving (Show, Eq)
 
 -- Datos del Juego en si
@@ -87,8 +103,12 @@ data GameState = GameState
     { jugador :: Jugador
     , items    :: [Item]
     , enemigos :: [Enemigo]
+
     , mapa    :: [Obstaculo]
     , camara  :: Camara
+
+    , spawners  :: [Spawner]
+    , rng       :: SR.StdGen
     } deriving (Show, Eq)
 
 -- Inputs soportados
@@ -100,6 +120,8 @@ data Input = Input
     , shift      :: Bool
     , decreaseDZ :: Bool
     , increaseDZ :: Bool
+    , zoomIn     :: Bool
+    , zoomOut    :: Bool
     } deriving (Show, Eq)
 
 -- ==========================================

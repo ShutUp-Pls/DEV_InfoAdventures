@@ -50,15 +50,14 @@ moverJugador :: Types.Input -> Types.Jugador -> [Types.Obstaculo] -> Types.Jugad
 moverJugador input jugadorIni mapObstaculos = 
     CMS.execState (actFisicasMovJugador input mapObstaculos) jugadorIni
 
-dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Types.Jugador -> IO ()
-dibujar renderer skinTexture camPos player = do
+dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> Types.Jugador -> IO ()
+dibujar renderer skinTexture camPos zoom player = do
     let posJ = Types.posJugador player
     let tamJ = Types.tamJugador player
     let angJ = Types.angJugador player
     
-    -- Dibujamos la textura base (Blanco)
-    GD.dibujarTextura renderer skinTexture camPos posJ tamJ angJ (SDL.V3 255 255 255)
+    GD.dibujarTextura renderer skinTexture camPos zoom posJ tamJ angJ (SDL.V3 255 255 255)
 
     -- Debug outline (Visión)
     let centroJ = posJ + (tamJ LV.^* 0.5)
-    OC.dibujarConoOutline renderer skinTexture camPos centroJ angJ 60 30
+    OC.dibujarConoOutline renderer skinTexture camPos zoom centroJ angJ 60 30

@@ -13,14 +13,18 @@ screenHeight = 600
 screenCenter :: SDL.V2 Float
 screenCenter = SDL.V2 (fromIntegral screenWidth / 2) (fromIntegral screenHeight / 2)
 
-worldToScreen :: SDL.V2 Float -> SDL.V2 Float -> SDL.V2 Float
-worldToScreen worldPos camPos = worldPos - camPos + screenCenter
+worldToScreen :: SDL.V2 Float -> SDL.V2 Float -> Float -> SDL.V2 Float
+worldToScreen worldPos camPos zoom = ((worldPos - camPos) LV.^* zoom) + screenCenter
 
-dibujarTextura :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> SDL.V3 DW.Word8 -> IO ()
-dibujarTextura renderer texture camPos worldPos size angle (SDL.V3 r g b) = do
-    let screenPos = worldToScreen worldPos camPos
+dibujarTextura :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> SDL.V3 DW.Word8 -> IO ()
+dibujarTextura renderer texture camPos zoom worldPos size angle (SDL.V3 r g b) = do
+    -- Aplicamos zoom a la posición
+    let screenPos = worldToScreen worldPos camPos zoom
     let SDL.V2 x y = screenPos
-    let SDL.V2 w h = size
+    
+    -- Aplicamos zoom al tamaño (ancho y alto)
+    let SDL.V2 w h = size LV.^* zoom 
+    
     let rect = SDL.Rectangle
             (SDL.P (SDL.V2 (round x) (round y)))
             (SDL.V2 (round w) (round h))
@@ -35,8 +39,8 @@ dibujarTextura renderer texture camPos worldPos size angle (SDL.V3 r g b) = do
                Nothing 
                (SDL.V2 False False)
 
-dibujarLinea :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> SDL.V3 DW.Word8 -> IO ()
-dibujarLinea renderer texture camPos start end grosor color = do
+dibujarLinea :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> SDL.V3 DW.Word8 -> IO ()
+dibujarLinea renderer texture camPos zoom start end grosor color = do
     let diff = end - start
     let (SDL.V2 dx dy) = diff
     
@@ -48,4 +52,5 @@ dibujarLinea renderer texture camPos start end grosor color = do
     let center = (start + end) LV.^* 0.5
     let pos = center - (size LV.^* 0.5)
 
-    dibujarTextura renderer texture camPos pos size anguloGrados color
+    -- Pasamos el zoom a dibujarTextura
+    dibujarTextura renderer texture camPos zoom pos size anguloGrados color

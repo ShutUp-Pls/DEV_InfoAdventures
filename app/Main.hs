@@ -34,7 +34,8 @@ main = do
     SDL.freeSurface surface
 
     -- Crear renderizado e iniciar loop con el estado inicial del juego
-    loop renderer font blockTexture skinTexture Inicio.estadoInicial
+    estadoJuego <- Inicio.estadoInicial
+    loop renderer font blockTexture skinTexture estadoJuego
 
     -- Limpiar al salir
     Font.free font
@@ -63,6 +64,8 @@ loop renderer font blockTexture skinTexture currentState = do
           , Types.shift      = keyboardState SDL.ScancodeLShift
           , Types.decreaseDZ = keyboardState SDL.ScancodeO
           , Types.increaseDZ = keyboardState SDL.ScancodeP
+          , Types.zoomOut    = keyboardState SDL.ScancodeSlash
+          , Types.zoomIn     = keyboardState SDL.ScancodeRightBracket
           }
 
     -- Lógica del juego (monadeState)

@@ -1,13 +1,25 @@
 module Fisica.Colisiones where
 
--- Modulos del sistema
+-- Módulos del sistema
 import qualified SDL
 import qualified Linear.Metric as LM
 import qualified Linear.Vector as LV
 
--- Modulos propios
+-- Módulos propios
 import qualified Types
 import qualified Fisica.SAT as FS
+
+-- Cuánta vida pierde el jugador al tocar un enemigo
+danoBaseEnemigo :: Float
+danoBaseEnemigo = 5.0   
+
+-- Ángulo por defecto para objetos sin rotación (AABB)
+anguloNulo :: Float
+anguloNulo = 0.0
+
+-- Aproxima el radio de una entidad rectangular para cálculos de separación circular
+calcularRadioAprox :: SDL.V2 Float -> Float
+calcularRadioAprox (SDL.V2 w h) = (w + h) / 2
 
 -- Verifica si algo con Hitbox choca contra algún obstáculo de la lista
 checkColision :: Types.Hitbox a => a -> [Types.Obstaculo] -> Maybe (SDL.V2 Float)
@@ -36,7 +48,7 @@ checkColisionsItems entidad listaItems =
     
     estaTocando :: Types.Item -> Bool
     estaTocando it = 
-        case FS.satCollision posE tamE angE (Types.posItem it) (Types.tamItem it) 0 of
+        case FS.satCollision posE tamE angE (Types.posItem it) (Types.tamItem it) anguloNulo of
             Just _  -> True
             Nothing -> False
 
@@ -44,7 +56,7 @@ checkColisionsItems entidad listaItems =
 logicaColision :: Types.Enemigo -> (Types.Jugador, [Types.Enemigo]) -> (Types.Jugador, [Types.Enemigo])
 logicaColision enem (jActual, enemigosProcesados) =
     -- Usamos pattern matching directamente sobre el resultado del SAT
-    case FS.satCollision (Types.posJugador jActual) (Types.tamJugador jActual) 0 (Types.posEnemigo enem) (Types.tamEnemigo enem) 0 of
+    case FS.satCollision (Types.posJugador jActual) (Types.tamJugador jActual) anguloNulo (Types.posEnemigo enem) (Types.tamEnemigo enem) anguloNulo of
         
         -- Si hay colisión, recibimos el vector 'mtv'
         Just mtv ->
@@ -57,7 +69,8 @@ logicaColision enem (jActual, enemigosProcesados) =
                 nuevoVelJ = dir LV.^* Types.empujeE enem
                 nuevoVelE = (dir LV.^* (-1)) LV.^* Types.empujeJ jActual
                 
-                jDañado = jActual { Types.vidJugador = Types.vidJugador jActual - 5.0
+                -- Aplicamos el daño definido en las constantes
+                jDañado = jActual { Types.vidJugador = Types.vidJugador jActual - danoBaseEnemigo
                                   , Types.velGolpeJ  = nuevoVelJ
                                   }
                 enemGolpeado = enem { Types.velGolpeE = nuevoVelE }
@@ -76,9 +89,11 @@ aplicarSeparacion :: [Types.Enemigo] -> Types.Enemigo -> Types.Enemigo
 aplicarSeparacion todos miEnemigo =
     let 
         miPos   = Types.posEnemigo miEnemigo
-        miRad   = Types.radInterno miEnemigo
+        miRad   = Types.radInterno miEnemigo -- Factor de radio (ej: 0.8 del tamaño total)
         rechazo = Types.rechazoE miEnemigo
-        miRadio = (let (SDL.V2 w h) = Types.tamEnemigo miEnemigo in (w + h) / 2) * miRad
+        
+        -- Usamos la función auxiliar para calcular el radio base
+        miRadio = calcularRadioAprox (Types.tamEnemigo miEnemigo) * miRad
         
         -- Calculamos el vector de empuje acumulado de todos los vecinos cercanos
         empujeTotal = foldr (\otroEnemigo acc -> 
@@ -87,7 +102,7 @@ aplicarSeparacion todos miEnemigo =
             else
                 let 
                     otroPos = Types.posEnemigo otroEnemigo
-                    otroRadio = (let (SDL.V2 w h) = Types.tamEnemigo otroEnemigo in (w + h) / 2) * miRad
+                    otroRadio = calcularRadioAprox (Types.tamEnemigo otroEnemigo) * miRad
                     
                     distanciaMinima = miRadio + otroRadio
                     vectorDif = miPos - otroPos

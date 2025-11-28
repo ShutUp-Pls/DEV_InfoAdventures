@@ -52,8 +52,8 @@ procesarBuffs dt jug =
             
     in jug { Types.buffsActivos = buffsVivos, Types.velFactorJ = nuevoFactor }
 
-dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Types.Item -> IO ()
-dibujar renderer texture camPos item = do
+dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> Types.Item -> IO ()
+dibujar renderer texture camPos zoom item = do
     let posI = Types.posItem item
     let tamI = Types.tamItem item
     let angI = Types.angItem item 
@@ -64,4 +64,4 @@ dibujar renderer texture camPos item = do
             Types.Velocidad {} -> SDL.V3 0 0 255     -- Azul
             Types.Puntos _     -> SDL.V3 255 255 0   -- Amarillo
 
-    GD.dibujarTextura renderer texture camPos posI tamI angI color
+    GD.dibujarTextura renderer texture camPos zoom posI tamI angI color

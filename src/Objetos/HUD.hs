@@ -12,7 +12,7 @@ import Graficos.Dibujado as GD
 
 dibujarOverlay :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> SDL.V2 Float -> SDL.V3 DW.Word8 -> IO ()
 dibujarOverlay renderer texture screenPos size color = do
-    dibujarTextura renderer texture screenCenter screenPos size 0 color
+    dibujarTextura renderer texture screenCenter 1.0 screenPos size 0 color
 
 dibujarHUD :: SDL.Renderer -> Font.Font -> SDL.Texture -> Float -> Float -> IO ()
 dibujarHUD renderer font texture vida velocidad = do

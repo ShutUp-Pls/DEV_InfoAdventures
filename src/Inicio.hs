@@ -7,6 +7,9 @@ import qualified SDL
 import qualified Types
 import qualified Personajes.Enemigo as PE
 import qualified Mapas.Mapa as MM
+import qualified System.Random as SR
+
+import qualified Objetos.Spawner as OS
 
 nuevoJugador :: Types.Jugador
 nuevoJugador = Types.Jugador
@@ -28,8 +31,6 @@ enemigosIniciales :: [Types.Enemigo]
 enemigosIniciales = 
     [ PE.crearEnemigo (SDL.V2 600 200)
     , PE.crearEnemigo (SDL.V2 100 100)
-    , PE.crearEnemigo (SDL.V2 700 500)
-    , PE.crearEnemigo (SDL.V2 200 450)
     ]
 
 itemsIniciales :: [Types.Item]
@@ -39,14 +40,28 @@ itemsIniciales =
     , Types.Item (SDL.V2 600 100) (SDL.V2 20 20) 0 (Types.Velocidad 3.0 3.0 False) True
     ]
 
-estadoInicial :: Types.GameState
-estadoInicial = Types.GameState
-    { Types.jugador  = nuevoJugador
-    , Types.enemigos = enemigosIniciales
-    , Types.items    = itemsIniciales
-    , Types.mapa     = MM.mapaBox
-    , Types.camara   = Types.Camara
-        { Types.posCamara    = SDL.V2 400 300
-        , Types.deadzoneSize = SDL.V2 100 100
+spawnerTest :: Types.Spawner
+spawnerTest = OS.crearSpawner 
+    (SDL.V2 200 450)
+    150.0
+    (Types.SpawnEnemigo (PE.crearEnemigo (SDL.V2 0 0)))
+    (2.0, 5.0)
+
+estadoInicial :: IO Types.GameState
+estadoInicial = do
+    semilla <- SR.newStdGen
+
+    return $ Types.GameState
+        { Types.jugador  = nuevoJugador
+        , Types.enemigos = enemigosIniciales
+        , Types.items    = itemsIniciales
+        , Types.mapa     = MM.mapaBox
+        , Types.camara   = Types.Camara
+            { Types.posCamara    = SDL.V2 400 300
+            , Types.deadzoneSize = SDL.V2 100 100
+            , Types.zoomLevel = 1.0
+            , Types.zoomBase = 1.0
+            }
+        , Types.spawners = [spawnerTest]
+        , Types.rng      = semilla
         }
-    }

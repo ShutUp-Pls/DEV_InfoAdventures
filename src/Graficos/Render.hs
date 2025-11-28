@@ -9,6 +9,7 @@ import qualified Objetos.Camara as OCamara
 import qualified Objetos.HUD as OHUD
 import qualified Objetos.Items as OItems
 import qualified Objetos.Obstaculo as OObstaculo
+import qualified Objetos.Spawner as OSpawner
 import qualified Personajes.Enemigo as OEnemigo
 import qualified Personajes.Jugador as OJugador
 
@@ -20,19 +21,22 @@ renderGame renderer font blockTexture skinTexture gs = do
     let bufJ     = Types.buffsActivos player
 
     let cam     = Types.camara gs
+    let zoom    = Types.zoomLevel cam
     let camPos  = Types.posCamara cam
+
     let dzSize  = Types.deadzoneSize cam
 
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 50 50 50 255
     SDL.clear renderer
 
-    mapM_ (OItems.dibujar renderer skinTexture camPos)      (Types.items gs)
-    mapM_ (OObstaculo.dibujar renderer blockTexture camPos) (Types.mapa gs)
-    mapM_ (OEnemigo.dibujar renderer skinTexture camPos)    (Types.enemigos gs)
-    
+    mapM_ (OItems.dibujar renderer skinTexture camPos zoom)      (Types.items gs)
+    mapM_ (OObstaculo.dibujar renderer blockTexture camPos zoom) (Types.mapa gs)
+    mapM_ (OEnemigo.dibujar renderer skinTexture camPos zoom)    (Types.enemigos gs)
+    mapM_ (OSpawner.dibujar renderer skinTexture camPos zoom)    (Types.spawners gs)
+    OJugador.dibujar renderer skinTexture camPos zoom player
+    OCamara.dibujarDeadzone renderer skinTexture dzSize zoom
+
     OHUD.dibujarBuffs renderer font skinTexture bufJ
     OHUD.dibujarHUD renderer font skinTexture vidJ velJ
-    OJugador.dibujar renderer skinTexture camPos player
-    OCamara.dibujarDeadzone renderer skinTexture dzSize
 
     SDL.present renderer

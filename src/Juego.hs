@@ -8,6 +8,7 @@ import qualified Types
 
 import qualified Objetos.Camara as OC
 import qualified Objetos.Items as OI
+import qualified Objetos.Spawner as OS
 
 import qualified Fisica.Colisiones as FC
 
@@ -22,10 +23,19 @@ updateGame input = do
     gameState <- CMS.get
     let dt = 0.016
 
+    -- Obtenemos el RNG actual y la lista de spawners
+    let currentRng = Types.rng gameState
+    let currentSpawners = Types.spawners gameState
+    
+    -- Ejecutamos la lógica de spawneado
+    let (spawnersAct, newEnemies, _, nextRng) = OS.actualizarSpawners dt currentRng currentSpawners
+
+    -- Agregamos las nuevas entidades a las listas existentes
+    let enemigosList = Types.enemigos gameState ++ newEnemies
+
     let jugadorConBuffs = OI.procesarBuffs dt (Types.jugador gameState)
 
     -- Extraer el jugador y mapa actuales
-    let enemigosList = Types.enemigos gameState
     let mapaActual   = Types.mapa gameState
     let camaraActual = Types.camara gameState
 
@@ -47,8 +57,10 @@ updateGame input = do
     -- Aquí aplicamos la nueva lógica. Los enemigos se empujan suavemente entre sí.
     let enemigosFin = FC.resolverColisionesEnemigos enemigosMovidos
 
+    let hayPeligro = any Types.veJugador enemigosFin
+
     -- Actualizamos la camara a partir del jugador final
-    let camaraFin = OC.actualizarCamara input jugadorConPowerUps camaraActual
+    let camaraFin = OC.actualizarCamara input jugadorConPowerUps hayPeligro camaraActual
 
     -- Se implementan los cambios
     CMS.put $ gameState 
@@ -56,5 +68,7 @@ updateGame input = do
         , Types.items    = itemsRestantes
         , Types.enemigos = enemigosFin
         , Types.camara   = camaraFin
+        , Types.spawners = spawnersAct
+        , Types.rng      = nextRng
         }
     return ()

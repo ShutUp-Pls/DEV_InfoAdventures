@@ -113,4 +113,10 @@
     * Se crear `HUD.hs` y `Obstaculo.hs` para cumplir con lo anterior
   * Ahora los enemigos no te siguen con la mirada en todo momento.
   * Ahora los enemigos tienen las misma gestión de movimiento estilo tanque del jugador (Rotar -> Mover)
+
+ ## 0.1.10.0 -- 2025-11-28
+  * Se añade el objeto `Spawner.hs` a fin de centralizar la generación de enemigo en ciertas areas.
+  * Se añade la posibilidad de hacer 'zoom-in' y 'zoom-out' con la tecla "+" y "-" respectivamente.
+  * Se añade la posibilidad de activar y desactivar un 'zoom-in' y 'zoom-out' cuando un enemigo te visualiza.
+  * Se refactorizan las constantes dentro de logicas del juego para conservarla en el header del codigo.
   
