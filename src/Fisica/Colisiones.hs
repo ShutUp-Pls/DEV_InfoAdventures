@@ -2,127 +2,132 @@ module Fisica.Colisiones where
 
 -- Módulos del sistema
 import qualified SDL
-import qualified Linear.Metric as LM
-import qualified Linear.Vector as LV
+import qualified Linear.Metric  as LMe
+import qualified Linear.Vector  as LV
+import qualified Lens.Micro     as LMi
 
 -- Módulos propios
-import qualified Types
-import qualified Fisica.SAT as FS
+import qualified Personajes.Types as PType
+import qualified Globals.Types    as GType
+import qualified Objetos.Types    as OType
+import qualified Fisica.SAT       as FS
 
--- Cuánta vida pierde el jugador al tocar un enemigo
 danoBaseEnemigo :: Float
-danoBaseEnemigo = 5.0   
-
--- Ángulo por defecto para objetos sin rotación (AABB)
+danoBaseEnemigo = 30.0   
 anguloNulo :: Float
 anguloNulo = 0.0
-
--- Aproxima el radio de una entidad rectangular para cálculos de separación circular
 calcularRadioAprox :: SDL.V2 Float -> Float
 calcularRadioAprox (SDL.V2 w h) = (w + h) / 2
 
--- Verifica si algo con Hitbox choca contra algún obstáculo de la lista
-checkColision :: Types.Hitbox a => a -> [Types.Obstaculo] -> Maybe (SDL.V2 Float)
-checkColision entidad obstaculos =
+resolverCombate :: PType.Jugador -> [PType.Zombie] -> (PType.Jugador, [PType.Zombie])
+resolverCombate jug enemigosList = 
+    foldr logicaColision (jug, []) enemigosList
+
+logicaColision :: PType.Zombie -> (PType.Jugador, [PType.Zombie]) -> (PType.Jugador, [PType.Zombie])
+logicaColision enem (jActual, enemigosProcesados) =
+    let posJ = jActual LMi.^. PType.jugEnt . GType.entBox . GType.boxPos
+        tamJ = jActual LMi.^. PType.jugEnt . GType.entBox . GType.boxTam
+        
+        posE = enem    LMi.^. PType.eneEnt . GType.entBox . GType.boxPos
+        tamE = enem    LMi.^. PType.eneEnt . GType.entBox . GType.boxTam
+
+    in case FS.satCollision posJ tamJ anguloNulo posE tamE anguloNulo of
+        Just mtv ->
+            let
+                dir = LMe.normalize mtv 
+
+                fuerzaEmpujeJ = jActual LMi.^. PType.jugEnt . GType.entEmp . GType.empFrz
+                fuerzaEmpujeE = enem    LMi.^. PType.eneEnt . GType.entEmp . GType.empFrz
+
+                nuevoVelJ = dir LV.^* fuerzaEmpujeE
+                nuevoVelE = (dir LV.^* (-1)) LV.^* fuerzaEmpujeJ
+
+                jDañado = jActual 
+                    LMi.& PType.jugEnt . GType.entVid . GType.vidAct LMi.%~ (\v -> v - danoBaseEnemigo)
+                    LMi.& PType.jugEnt . GType.entEmp . GType.empVec LMi..~ nuevoVelJ
+
+                enemGolpeado = enem 
+                    LMi.& PType.eneEnt . GType.entEmp . GType.empVec LMi..~ nuevoVelE
+            in
+                (jDañado, enemGolpeado : enemigosProcesados)
+
+        Nothing ->
+            (jActual, enem : enemigosProcesados)
+
+resolverColisionesEnemigos :: [PType.Zombie] -> [PType.Zombie]
+resolverColisionesEnemigos listaEnemigos =
+    map (aplicarSeparacion listaEnemigos) listaEnemigos
+
+aplicarSeparacion :: [PType.Zombie] -> PType.Zombie -> PType.Zombie
+aplicarSeparacion todos enemigo =
+    let 
+        miPos   = enemigo LMi.^. PType.eneEnt . GType.entBox . GType.boxPos
+        miTam   = enemigo LMi.^. PType.eneEnt . GType.entBox . GType.boxTam
+
+        miRadFactor = 1.0
+        rechazo     = 0.2
+        
+        miRadio = calcularRadioAprox miTam * miRadFactor
+
+        empujeTotal = foldr (\otroEnemigo acc -> 
+            let otroPos = otroEnemigo LMi.^. PType.eneEnt . GType.entBox . GType.boxPos
+            in if otroPos == miPos
+            then acc 
+            else
+                let 
+                    otroTam   = otroEnemigo LMi.^. PType.eneEnt . GType.entBox . GType.boxTam
+                    otroRadio = calcularRadioAprox otroTam * miRadFactor
+                    
+                    distanciaMinima = miRadio + otroRadio
+                    vectorDif = miPos - otroPos
+                    distancia = LMe.norm vectorDif
+                in
+                    if distancia < distanciaMinima && distancia > 0
+                    then 
+                        let 
+                            penetracion = distanciaMinima - distancia
+                            direccion = LMe.normalize vectorDif
+                        in 
+                            acc + (direccion LV.^* penetracion)
+                    else acc
+            ) (SDL.V2 0 0) todos
+    in 
+        enemigo LMi.& PType.eneEnt . GType.entBox . GType.boxPos LMi.%~ (+ (empujeTotal LV.^* rechazo))
+
+checkColision :: GType.Box -> [GType.Box] -> Maybe (SDL.V2 Float)
+checkColision boxEntidad obstaculos =
     let colisiones = map getMTV obstaculos
         validos = filter (/= Nothing) colisiones
     in case validos of
         (Just mtv : _) -> Just mtv
         _              -> Nothing
   where
-    posE = Types.getPos entidad
-    tamE = Types.getTam entidad
-    angE = Types.getAng entidad
-    
-    getMTV (Types.Obstaculo posObj tamObj angObj) =
-        FS.satCollision posE tamE angE posObj tamObj angObj
+    posE = boxEntidad LMi.^. GType.boxPos
+    tamE = boxEntidad LMi.^. GType.boxTam
+    angE = boxEntidad LMi.^. GType.boxAng
 
--- Verifica si algo con Hitbox choca contra algún item de la lista
-checkColisionsItems :: Types.Hitbox a => a -> [Types.Item] -> [Types.Item]
-checkColisionsItems entidad listaItems =
+    getMTV boxObs =
+        FS.satCollision posE tamE angE 
+                        (boxObs LMi.^. GType.boxPos) 
+                        (boxObs LMi.^. GType.boxTam) 
+                        (boxObs LMi.^. GType.boxAng)
+
+checkColisionsItems :: GType.Box -> [OType.ItemBuff] -> [OType.ItemBuff]
+checkColisionsItems boxEntidad listaItems =
     filter estaTocando listaItems
   where
-    posE = Types.getPos entidad
-    tamE = Types.getTam entidad
-    angE = Types.getAng entidad
+    posE = boxEntidad LMi.^. GType.boxPos
+    tamE = boxEntidad LMi.^. GType.boxTam
+    angE = boxEntidad LMi.^. GType.boxAng
     
-    estaTocando :: Types.Item -> Bool
+    estaTocando :: OType.ItemBuff -> Bool
     estaTocando it = 
-        case FS.satCollision posE tamE angE (Types.posItem it) (Types.tamItem it) anguloNulo of
-            Just _  -> True
-            Nothing -> False
-
--- Esta función acumula los enemigos procesados y actualiza al jugador acumulado
-logicaColision :: Types.Enemigo -> (Types.Jugador, [Types.Enemigo]) -> (Types.Jugador, [Types.Enemigo])
-logicaColision enem (jActual, enemigosProcesados) =
-    -- Usamos pattern matching directamente sobre el resultado del SAT
-    case FS.satCollision (Types.posJugador jActual) (Types.tamJugador jActual) anguloNulo (Types.posEnemigo enem) (Types.tamEnemigo enem) anguloNulo of
-        
-        -- Si hay colisión, recibimos el vector 'mtv'
-        Just mtv ->
-            let
-                -- El MTV ya apunta en la dirección de salida perfecta
-                -- Lo normalizamos para tener solo la dirección del golpe
-                dir = LM.normalize mtv 
-                
-                -- Aplicamos el empuje usando esa dirección precisa
-                nuevoVelJ = dir LV.^* Types.empujeE enem
-                nuevoVelE = (dir LV.^* (-1)) LV.^* Types.empujeJ jActual
-                
-                -- Aplicamos el daño definido en las constantes
-                jDañado = jActual { Types.vidJugador = Types.vidJugador jActual - danoBaseEnemigo
-                                  , Types.velGolpeJ  = nuevoVelJ
-                                  }
-                enemGolpeado = enem { Types.velGolpeE = nuevoVelE }
-            in
-                (jDañado, enemGolpeado : enemigosProcesados)
-
-        -- Si es Nothing, no hubo choque
-        Nothing ->
-            (jActual, enem : enemigosProcesados)
-
-resolverCombate :: Types.Jugador -> [Types.Enemigo] -> (Types.Jugador, [Types.Enemigo])
-resolverCombate jug enemigosList = 
-    foldr logicaColision (jug, []) enemigosList
-
-aplicarSeparacion :: [Types.Enemigo] -> Types.Enemigo -> Types.Enemigo
-aplicarSeparacion todos miEnemigo =
-    let 
-        miPos   = Types.posEnemigo miEnemigo
-        miRad   = Types.radInterno miEnemigo -- Factor de radio (ej: 0.8 del tamaño total)
-        rechazo = Types.rechazoE miEnemigo
-        
-        -- Usamos la función auxiliar para calcular el radio base
-        miRadio = calcularRadioAprox (Types.tamEnemigo miEnemigo) * miRad
-        
-        -- Calculamos el vector de empuje acumulado de todos los vecinos cercanos
-        empujeTotal = foldr (\otroEnemigo acc -> 
-            if otroEnemigo == miEnemigo 
-            then acc 
-            else
-                let 
-                    otroPos = Types.posEnemigo otroEnemigo
-                    otroRadio = calcularRadioAprox (Types.tamEnemigo otroEnemigo) * miRad
-                    
-                    distanciaMinima = miRadio + otroRadio
-                    vectorDif = miPos - otroPos
-                    distancia = LM.norm vectorDif
-                in
-                    -- Si están demasiado cerca (pero no son el mismo punto exacto)
-                    if distancia < distanciaMinima && distancia > 0
-                    then 
-                        let 
-                            -- Cuanto más cerca, más fuerte el empuje
-                            penetracion = distanciaMinima - distancia
-                            direccion = LM.normalize vectorDif
-                        in 
-                            acc + (direccion LV.^* penetracion)
-                    else acc
-            ) (SDL.V2 0 0) todos
-        -- Aplicamos el empuje suavemente a la posición actual
-    in 
-        miEnemigo { Types.posEnemigo = miPos + (empujeTotal LV.^* rechazo) }
-
-resolverColisionesEnemigos :: [Types.Enemigo] -> [Types.Enemigo]
-resolverColisionesEnemigos listaEnemigos =
-    map (aplicarSeparacion listaEnemigos) listaEnemigos
+        let 
+            boxIt = it LMi.^. OType.iteBox
+            posI = boxIt LMi.^. GType.boxPos
+            tamI = boxIt LMi.^. GType.boxTam
+            angI = boxIt LMi.^. GType.boxAng
+        in 
+            case FS.satCollision posE tamE angE posI tamI angI of
+                Just _  -> True
+                Nothing -> False

@@ -1,63 +1,65 @@
 module Personajes.Jugador where
-
--- Modulos del sistema
-import SDL
-import qualified Linear.Metric as LM
-import qualified Linear.Vector as LV
+-- Módulos del sistema
+import qualified SDL
+import qualified Linear.Vector       as LV
 import qualified Control.Monad.State as CMS
+import qualified Lens.Micro          as LMi
+-- Módulos propios
+import qualified Globals.Types      as GType
+import qualified Personajes.Types   as PType
+import qualified Types              as Input
+import qualified Graficos.Dibujado  as GD
+import qualified Objetos.Cono       as OC 
+import qualified Personajes.Control as PC
 
--- Modulos propios
-import qualified Types
-import qualified Utils
-import qualified Graficos.Dibujado as GD
-import qualified Fisica.Movimiento as FM
-import qualified Objetos.Cono as OC 
+nuevoJugador :: PType.Jugador
+nuevoJugador = PType.Jugador
+    { PType._factCorrer = 0.75
+    , PType._spawnPoint = SDL.V2 400 300
+    , PType._jugEnt = GType.Entidad
+        { GType._entBox = GType.Box
+            { GType._boxPos = SDL.V2 400 300
+            , GType._boxTam = SDL.V2 30 30
+            , GType._boxAng = 0.0
+            , GType._boxRad = 15.0
+            }
+        , GType._entMov = GType.Movimiento 
+            { GType._movVel = 4.0
+            , GType._movRot = 10.0 
+            , GType._movFac = 1.0
+            , GType._movAct = 0.0
+            }
+        , GType._entVid = GType.Vida 
+            { GType._vidAct = 100.0
+            , GType._vidMax = 100.0
+            , GType._vidMrt = 0
+            }
+        , GType._entEmp = GType.Empuje 
+            { GType._empVec = SDL.V2 0 0
+            , GType._empFrz = 10.0
+            }
+        , GType._entBuf = []
+        }
+    }
 
-actFisicasMovJugador :: Types.Input -> [Types.Obstaculo] -> CMS.State Types.Jugador ()
-actFisicasMovJugador input mapObstaculos = do
-    jugador <- CMS.get
+moverJugador :: Input.Input -> PType.Jugador -> [GType.Box] -> PType.Jugador
+moverJugador input jugadorActual mapObstaculos = 
+    let 
+        entidadInicial = jugadorActual LMi.^. PType.jugEnt
+        bonusRun       = jugadorActual LMi.^. PType.factCorrer
+        entidadFinal = CMS.execState 
+            (PC.rutinaControl input bonusRun mapObstaculos) 
+            entidadInicial
+    in
+        jugadorActual LMi.& PType.jugEnt LMi..~ entidadFinal
 
-    let dirX = (if Types.derecha input then 1 else 0) - (if Types.izquierda input then 1 else 0)
-    let dirY = (if Types.abajo input then 1 else 0)  - (if Types.arriba input then 1 else 0)
-    let vecDireccion = SDL.V2 dirX dirY
-
-    let velCor = Types.velCorrerJ jugador
-        velCam = Types.velCaminarJ jugador
-        velRot = Types.velRotacion jugador
-        factor = Types.velFactorJ jugador
-        velocidadBase = if Types.shift input then velCor else velCam
-
-    let velocidadInput = if vecDireccion == SDL.V2 0 0 
-                         then SDL.V2 0 0 
-                         else LM.normalize vecDireccion LV.^* (velocidadBase * factor)
-
-    velFinal <- FM.resolverFisica velocidadInput mapObstaculos
-    let anguloActual = Types.angJugador jugador
-    let nuevoAngulo = if vecDireccion == SDL.V2 0 0
-                      then anguloActual
-                      else 
-                          let 
-                              rads = atan2 dirY dirX
-                              targetAng = rads * (180 / pi)
-                          in 
-                              Utils.suavizarAngulo anguloActual targetAng velRot
-
-    CMS.modify $ \s -> s { Types.velJugador = LM.norm velFinal
-                         , Types.angJugador = nuevoAngulo 
-                         }
-
-moverJugador :: Types.Input -> Types.Jugador -> [Types.Obstaculo] -> Types.Jugador
-moverJugador input jugadorIni mapObstaculos = 
-    CMS.execState (actFisicasMovJugador input mapObstaculos) jugadorIni
-
-dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> Types.Jugador -> IO ()
+dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> PType.Jugador -> IO ()
 dibujar renderer skinTexture camPos zoom player = do
-    let posJ = Types.posJugador player
-    let tamJ = Types.tamJugador player
-    let angJ = Types.angJugador player
+    let posJ = player LMi.^. PType.jugEnt . GType.entBox . GType.boxPos
+    let tamJ = player LMi.^. PType.jugEnt . GType.entBox . GType.boxTam
+    let angJ = player LMi.^. PType.jugEnt . GType.entBox . GType.boxAng
     
-    GD.dibujarTextura renderer skinTexture camPos zoom posJ tamJ angJ (SDL.V3 255 255 255)
+    GD.dibujarTextura renderer skinTexture camPos zoom posJ tamJ angJ (SDL.V4 255 255 255 255)
 
-    -- Debug outline (Visión)
     let centroJ = posJ + (tamJ LV.^* 0.5)
     OC.dibujarConoOutline renderer skinTexture camPos zoom centroJ angJ 60 30

@@ -17,35 +17,49 @@ executable DEV-InfoAdventures
     main-is:          Main.hs
 
     other-modules:
-        Types
-        Inicio
-        Juego
-        Utils
-        Mapas.Mapa
+        Fisica.Angulos
+        Fisica.Colisiones
+        Fisica.Movimiento
+        Fisica.SAT
+        Fisica.Vectores
+
+        Globals.Types
+
         Graficos.Dibujado
         Graficos.Render
+
+        Mapas.Mapa
+
         Objetos.Camara
         Objetos.Cono
         Objetos.HUD
-        Objetos.Items
-        Objetos.Obstaculo
+        Objetos.ItemBuff
+        Objetos.Particula
         Objetos.Spawner
+        Objetos.Types
+
+        Personajes.Control
+        Personajes.IA
         Personajes.Jugador
-        Personajes.Enemigo
-        Fisica.SAT
-        Fisica.Colisiones
-        Fisica.Movimiento
+        Personajes.Zombie
+        Personajes.Types
+
+        Types
+        Inicio
+        Juego
     build-depends:
-        base ^>=4.17.2.0,
-        sdl2,
-        sdl2-ttf,
-        linear,
-        bytestring,
-        directory,
-        text,
-        mtl, 
-        vector,
-        random
+        base ^>=4.17.2.0
+        ,sdl2
+        ,sdl2-ttf
+        ,linear
+        ,bytestring
+        ,directory
+        ,text
+        ,mtl 
+        ,vector
+        ,random
+        ,microlens
+        ,microlens-th
     hs-source-dirs:   app, src
 
     default-language: Haskell2010

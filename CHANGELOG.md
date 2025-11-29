@@ -119,4 +119,25 @@
   * Se añade la posibilidad de hacer 'zoom-in' y 'zoom-out' con la tecla "+" y "-" respectivamente.
   * Se añade la posibilidad de activar y desactivar un 'zoom-in' y 'zoom-out' cuando un enemigo te visualiza.
   * Se refactorizan las constantes dentro de logicas del juego para conservarla en el header del codigo.
-  
+
+ ## 0.1.11.0 -- 2025-11-29
+  * Se añade la posibilidad de morir y reaparecer al jugador.
+  * Se añaden particulas explosivas.
+  * Se refactoriza `Juego.hs` en varias `monadeStates` con el fin de manejar distintos estados del juego.
+  * Se refactoriza `Types.hs` para facilitar lectura y se estructura para mejorar logica y escalabilidad.
+  * Cada submodulo implementa su propio `Types.hs`.
+  * Se integra la carpeta 'Globals' donde se posicionan los tipos y utilidades que solo beben del sistema, dedicados a alimentar los modulos.
+  * "Enemigo" ahora es "Zombie".
+  * Se agregan 'Lenses' a los `Types.hs` para aumentar escalabilidad.
+  * Se eliminan monadeState redundante en `Jugador.hs` y `Zombie.hs`.
+  * Se introduce el modulo `IA.hs` y `Control.hs` en 'Personajes', además `Angulos.hs` y `Vectores.hs` en 'Fisicas'.
+  * Modulos `Utils.hs` eliminados.
+  * Se separa la logica de buffos, con los items y como lo almacena el jugador.
+  * Se ordena el dibujado y se añade un overlay a la pantalla de muerte.
+  * Cambiado los graficos de `SDL.V3` a `SDL.V4`.
+  * ¡Nuevo mapa! Ya era hora.
+  * ¡Nuevo enemigo! Ya era hora x2.
+  * Se ajusta el SAT para que ahora calcule basandose en el centro del jugador sumado a pasos simulados ¡Ya no se atraviesan paredes! (Este bug lo tenía desde que cambié a SAT)
+
+  >*Nota*: El añadido de particulas me sirvió para testear los limites del renderizar de esta forma tantos dibujos en movimiento. (10.000 particulas y aún así el movimiento fue fluido, solo disminuyeron un pocos los FPS)
+  >*Nota*: La refactorización fue un infierno que me llevó todo el día.

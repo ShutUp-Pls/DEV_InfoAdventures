@@ -1,42 +1,60 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Graficos.Render where
-
+-- Módulos del sistema
 import qualified SDL
-import qualified SDL.Font as Font
-
+import qualified SDL.Font   as Font
+import qualified Lens.Micro as LMi
+-- Módulos propios
 import qualified Types
-import qualified Objetos.Camara as OCamara
-import qualified Objetos.HUD as OHUD
-import qualified Objetos.Items as OItems
-import qualified Objetos.Obstaculo as OObstaculo
-import qualified Objetos.Spawner as OSpawner
-import qualified Personajes.Enemigo as OEnemigo
+import qualified Personajes.Types   as PType
+import qualified Globals.Types      as GType
+import qualified Objetos.Types      as OType
+
+import qualified Graficos.Dibujado  as GD
+
+import qualified Objetos.Camara     as OCamara
+import qualified Objetos.HUD        as OHUD
+import qualified Objetos.ItemBuff   as OIBuff
+import qualified Objetos.Spawner    as OSpawner
+import qualified Objetos.Particula  as OParticulas
+import qualified Personajes.Zombie  as OZombie
 import qualified Personajes.Jugador as OJugador
 
 renderGame :: SDL.Renderer -> Font.Font -> SDL.Texture -> SDL.Texture -> Types.GameState -> IO ()
 renderGame renderer font blockTexture skinTexture gs = do
-    let player   = Types.jugador gs
-    let velJ     = Types.velJugador player
-    let vidJ     = Types.vidJugador player
-    let bufJ     = Types.buffsActivos player
 
-    let cam     = Types.camara gs
-    let zoom    = Types.zoomLevel cam
-    let camPos  = Types.posCamara cam
+    let player      = gs LMi.^. Types.jugador
+    let vidaStruct  = player LMi.^. PType.jugEnt . GType.entVid
+    let vidAct      = vidaStruct LMi.^. GType.vidAct
+    let bufJ        = player LMi.^. PType.jugEnt . GType.entBuf 
+    let listaItems  = gs LMi.^. Types.itemsBuff
+    let vivo        = vidAct > 0
 
-    let dzSize  = Types.deadzoneSize cam
+    let cam      = gs  LMi.^. Types.camara
+    let zoom     = cam LMi.^. OType.zoomLevel
+    let camPos   = cam LMi.^. OType.posCamara
+    let dzSize   = cam LMi.^. OType.deadzoneSize
 
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 50 50 50 255
     SDL.clear renderer
 
-    mapM_ (OItems.dibujar renderer skinTexture camPos zoom)      (Types.items gs)
-    mapM_ (OObstaculo.dibujar renderer blockTexture camPos zoom) (Types.mapa gs)
-    mapM_ (OEnemigo.dibujar renderer skinTexture camPos zoom)    (Types.enemigos gs)
-    mapM_ (OSpawner.dibujar renderer skinTexture camPos zoom)    (Types.spawners gs)
-    OJugador.dibujar renderer skinTexture camPos zoom player
-    OCamara.dibujarDeadzone renderer skinTexture dzSize zoom
+    -- 1. Renderizado del Mundo
+    mapM_ (OIBuff.dibujar renderer skinTexture camPos zoom)      listaItems 
+    mapM_ (OZombie.dibujar renderer skinTexture camPos zoom)     (gs LMi.^. Types.enemigos)
+    mapM_ (OSpawner.dibujar renderer skinTexture camPos zoom)    (gs LMi.^. Types.spawners)
+    mapM_ (OParticulas.dibujar renderer skinTexture camPos zoom) (gs LMi.^. Types.particulas)
+    mapM_ (GD.dibujarBox renderer blockTexture camPos zoom)      (gs LMi.^. Types.mapa)
 
-    OHUD.dibujarBuffs renderer font skinTexture bufJ
-    OHUD.dibujarHUD renderer font skinTexture vidJ velJ
+    -- 2. Renderizado de Jugador y UI
+    if vivo then do
+        OJugador.dibujar renderer skinTexture camPos zoom player
+        OCamara.dibujarDeadzone renderer skinTexture dzSize zoom
+        OHUD.dibujarBuffs renderer font skinTexture bufJ
+
+        let screenDims = (fromIntegral GD.screenWidth, fromIntegral GD.screenHeight)
+        OHUD.dibujarHUD renderer font skinTexture player screenDims
+    else do
+        let muertesVal = vidaStruct LMi.^. GType.vidMrt
+        OHUD.dibujarMuerte renderer font skinTexture muertesVal
 
     SDL.present renderer

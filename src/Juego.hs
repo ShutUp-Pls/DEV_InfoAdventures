@@ -1,74 +1,116 @@
 module Juego where
-
 -- Módulos del sistema
 import qualified Control.Monad.State as CMS
-
+import qualified SDL
+import qualified Control.Monad       as CM
+import qualified Lens.Micro          as LMi
 -- Módulos propios
 import qualified Types
+import qualified Globals.Types       as GType
+import qualified Personajes.Types    as PType
+import qualified Objetos.Types       as OType
+import qualified Objetos.Camara      as OC
+import qualified Objetos.ItemBuff    as OIBuff
+import qualified Objetos.Spawner     as OS
+import qualified Objetos.Particula   as OP 
+import qualified Fisica.Colisiones   as FC
+import qualified Personajes.Jugador  as PJ
+import qualified Personajes.Zombie   as PZ
 
-import qualified Objetos.Camara as OC
-import qualified Objetos.Items as OI
-import qualified Objetos.Spawner as OS
+dt :: Float
+dt = 0.016
 
-import qualified Fisica.Colisiones as FC
-
-import qualified Personajes.Jugador as PJ
-import qualified Personajes.Enemigo as PE
-
--- La función principal de lógica usando monadState
--- Modifica el estado del juego basado en el input.
 updateGame :: Types.Input -> CMS.State Types.GameState ()
 updateGame input = do
-    -- Obtener el estado actual del juego
-    gameState <- CMS.get
-    let dt = 0.016
-
-    -- Obtenemos el RNG actual y la lista de spawners
-    let currentRng = Types.rng gameState
-    let currentSpawners = Types.spawners gameState
+    updateGlobalSystems
     
-    -- Ejecutamos la lógica de spawneado
-    let (spawnersAct, newEnemies, _, nextRng) = OS.actualizarSpawners dt currentRng currentSpawners
+    gs <- CMS.get
+    let jug = gs LMi.^. Types.jugador
+    let vidaActual = jug LMi.^. PType.jugEnt . GType.entVid . GType.vidAct
 
-    -- Agregamos las nuevas entidades a las listas existentes
-    let enemigosList = Types.enemigos gameState ++ newEnemies
+    if vidaActual > 0
+        then handleGameplay input
+        else handleGameOver input
 
-    let jugadorConBuffs = OI.procesarBuffs dt (Types.jugador gameState)
+updateGlobalSystems :: CMS.State Types.GameState ()
+updateGlobalSystems = do
+    gs <- CMS.get
+    let (spawnersAct, newEnemies, newItems, nextRng) = 
+            OS.actualizarSpawners dt (gs LMi.^. Types.rng) (gs LMi.^. Types.spawners)
 
-    -- Extraer el jugador y mapa actuales
-    let mapaActual   = Types.mapa gameState
-    let camaraActual = Types.camara gameState
+    let particulasVivas = OP.actualizarParticulas dt (gs LMi.^. Types.particulas)
 
-    let (jugadorGolpeado, enemigosGolpeados) = FC.resolverCombate jugadorConBuffs enemigosList
+    CMS.put $ gs
+        LMi.& Types.spawners   LMi..~ spawnersAct
+        LMi.& Types.enemigos   LMi.%~ (++ newEnemies)
+        LMi.& Types.itemsBuff  LMi.%~ (++ newItems)
+        LMi.& Types.rng        LMi..~ nextRng
+        LMi.& Types.particulas LMi..~ particulasVivas
 
-    -- Actualizamos posicion del jugador
-    let jugadorFin = PJ.moverJugador input jugadorGolpeado mapaActual
 
-    let itemsTocados   = FC.checkColisionsItems jugadorFin (Types.items gameState)
-    let itemsRestantes = filter (\it -> not (it `elem` itemsTocados)) (Types.items gameState)
-    let jugadorConPowerUps = foldr (\it jug -> OI.aplicarEfecto (Types.tipoItem it) jug) jugadorFin itemsTocados
+handleGameOver :: Types.Input -> CMS.State Types.GameState ()
+handleGameOver input = do
+    CM.when (input LMi.^. Types.teclaRespawn) respawnPlayer
 
-    -- Actualizamos posicion del enemigo
-    let enemigosMovidos = map (\enemigo -> 
-            let delta = PE.calcularDirEnemigo enemigo jugadorConPowerUps
-            in PE.moverEnemigo enemigo delta mapaActual jugadorConPowerUps
-         ) enemigosGolpeados
+respawnPlayer :: CMS.State Types.GameState ()
+respawnPlayer = do
+    gs <- CMS.get
+    let spawnP = gs LMi.^. Types.jugador . PType.spawnPoint
 
-    -- Aquí aplicamos la nueva lógica. Los enemigos se empujan suavemente entre sí.
-    let enemigosFin = FC.resolverColisionesEnemigos enemigosMovidos
+    CMS.modify $ Types.jugador LMi.%~ \j -> j
+        LMi.& PType.jugEnt . GType.entVid . GType.vidAct LMi..~ (j LMi.^. PType.jugEnt . GType.entVid . GType.vidMax)
+        LMi.& PType.jugEnt . GType.entBox . GType.boxPos LMi..~ spawnP
+        LMi.& PType.jugEnt . GType.entEmp . GType.empVec LMi..~ SDL.V2 0 0
+        LMi.& PType.jugEnt . GType.entBuf LMi..~ []
 
-    let hayPeligro = any Types.veJugador enemigosFin
+handleGameplay :: Types.Input -> CMS.State Types.GameState ()
+handleGameplay input = do
+    gs <- CMS.get
+    
+    let jugadorBase = gs LMi.^. Types.jugador
+        enemigos    = gs LMi.^. Types.enemigos
+        mapa        = gs LMi.^. Types.mapa
+    let jugadorConBuffs = OIBuff.procesarBuffs dt jugadorBase
+    let (jugadorGolpeado, enemigosPostCombate) = FC.resolverCombate jugadorConBuffs enemigos
+    let vidaPostCombate = jugadorGolpeado LMi.^. PType.jugEnt . GType.entVid . GType.vidAct
 
-    -- Actualizamos la camara a partir del jugador final
-    let camaraFin = OC.actualizarCamara input jugadorConPowerUps hayPeligro camaraActual
+    if vidaPostCombate <= 0
+        then triggerDeath jugadorGolpeado enemigosPostCombate
+        else do
+            let jugadorMovido = PJ.moverJugador input jugadorGolpeado mapa
+            let (jugadorConItems, itemsRestantes) = handleItems jugadorMovido (gs LMi.^. Types.itemsBuff)
+            let enemigosFinales = PZ.updateEnemies jugadorConItems enemigosPostCombate mapa
+            let hayPeligro = any (LMi.^. PType.eneVerJug) enemigosFinales
+            let camaraFinal = OC.actualizarCamara input jugadorConItems hayPeligro (gs LMi.^. Types.camara)
 
-    -- Se implementan los cambios
-    CMS.put $ gameState 
-        { Types.jugador  = jugadorConPowerUps
-        , Types.items    = itemsRestantes
-        , Types.enemigos = enemigosFin
-        , Types.camara   = camaraFin
-        , Types.spawners = spawnersAct
-        , Types.rng      = nextRng
-        }
-    return ()
+            CMS.put $ gs
+                LMi.& Types.jugador     LMi..~ jugadorConItems
+                LMi.& Types.itemsBuff   LMi..~ itemsRestantes
+                LMi.& Types.enemigos    LMi..~ enemigosFinales
+                LMi.& Types.camara      LMi..~ camaraFinal
+
+handleItems :: PType.Jugador -> [OType.ItemBuff] -> (PType.Jugador, [OType.ItemBuff])
+handleItems jug items = 
+    let boxJug = jug LMi.^. PType.jugEnt . GType.entBox
+        itemsTocados   = FC.checkColisionsItems boxJug items
+        itemsRestantes = filter (\it -> not (it `elem` itemsTocados)) items
+        jugConPowerUps = foldr (\it j -> OIBuff.aplicarEfecto it j) jug itemsTocados
+    in (jugConPowerUps, itemsRestantes)
+
+triggerDeath :: PType.Jugador -> [PType.Zombie] -> CMS.State Types.GameState ()
+triggerDeath jug enemigos = do
+    gs <- CMS.get
+    
+    let posMuerte = jug LMi.^. PType.jugEnt . GType.entBox . GType.boxPos
+    let cantidadParticulas = 50 
+    let multiplicadorVel = 1.2
+    let rngActual = gs LMi.^. Types.rng
+
+    let (nuevasParticulas, nextRng) = OP.crearExplosionGradualDown posMuerte cantidadParticulas multiplicadorVel rngActual
+    let jugActualizado = jug LMi.& (PType.jugEnt . GType.entVid . GType.vidMrt LMi.+~ 1)
+
+    CMS.put $ gs 
+        LMi.& Types.jugador    LMi..~ jugActualizado 
+        LMi.& Types.enemigos   LMi..~ enemigos
+        LMi.& Types.particulas LMi.%~ (++ nuevasParticulas)
+        LMi.& Types.rng        LMi..~ nextRng
