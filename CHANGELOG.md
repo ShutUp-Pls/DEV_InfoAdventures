@@ -170,3 +170,6 @@
  * Se comienza a esribir el README.md con formato de informe.
 
  >*Nota*: Escribiendo el readme me di cuenta que he estado no aprovechando del todo las `Fisica.Combates`, por lo que habrá una siguiente refactorización que utilizaré para ejemplificar en el informa
+
+ ## 1.0.1.1 -- 2025-11-01
+  * Un ejemplo muy ilustrativo de la  aplicación de `monadeStates` en el codigo real

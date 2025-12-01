@@ -2,18 +2,19 @@
 module Personajes.Jugador where
 -- Módulos del sistema
 import qualified SDL
-import qualified Lens.Micro         as LMi
-import qualified Linear.Vector      as LV
+import qualified Lens.Micro             as LMi
+import qualified Lens.Micro.Mtl         as LMi
+import qualified Linear.Vector          as LV
+import qualified Control.Monad.State    as CMS
 -- Módulos propios
 import qualified Types
-import qualified Globals.Types      as GType
-import qualified Personajes.Types   as PType
+import qualified Globals.Types          as GType
+import qualified Personajes.Types       as PType
 
-import qualified Graficos.Dibujado  as GD
+import qualified Graficos.Dibujado      as GD
 
-import qualified Fisica.Angulos     as FAng
-import qualified Fisica.MovEntidad  as FMen
-import qualified Fisica.Vectores as FAng
+import qualified Fisica.Angulos         as FAng
+import qualified Fisica.MovEntidad      as FMen
 
 crearBoxJugador :: SDL.V2 Float -> GType.Box
 crearBoxJugador pos = GType.Box
@@ -62,19 +63,78 @@ crearJugador startPos spawnPos = PType.Jugador
     , PType._jugEnt     = crearEntidadJugador startPos
     }
 
-moverJugador :: Types.Input -> PType.Jugador -> [GType.Box] -> PType.Jugador
-moverJugador input jugadorActual mapObstaculos = 
-    let 
-        entidadInicial  = jugadorActual LMi.^. PType.jugEnt
-        runFactor       = jugadorActual LMi.^. PType.factCorrer
-        entidadRotada   = FMen.girarEntidadPorTeclado input entidadInicial
-        velBase         = entidadRotada LMi.^. GType.entMov . GType.movVel
-        anguloActual    = entidadRotada LMi.^. GType.entBox . GType.boxAng
-        magnitud        = FAng.magnitudPorTeclado input velBase runFactor anguloActual
-        vecDir          = FAng.anguloAVector anguloActual
-        velIntencion    = vecDir LV.^* magnitud
-        jugadorFinal    = FMen.moverEntidad velIntencion mapObstaculos entidadRotada
-    in  jugadorActual LMi.& PType.jugEnt LMi..~ jugadorFinal
+moverJugadorP :: Types.Input -> PType.Jugador -> [GType.Box] -> PType.Jugador
+moverJugadorP input jugadorActual mapObstaculos = 
+    CMS.execState (moverJugador input mapObstaculos) jugadorActual
+
+moverJugador :: Types.Input -> [GType.Box] -> CMS.State PType.Jugador ()
+moverJugador input mapObstaculos = do
+    girarJugadorM input
+    desplazarJugadorM input mapObstaculos
+
+girarJugadorM :: Types.Input -> CMS.State PType.Jugador ()
+girarJugadorM input = do
+    entidad <- CMS.gets (LMi.^. PType.jugEnt)
+    
+    let dirX = (if input LMi.^. Types.derecha then 1 else 0) - (if input LMi.^. Types.izquierda then 1 else 0) :: Int
+        dirY = (if input LMi.^. Types.abajo   then 1 else 0) - (if input LMi.^. Types.arriba  then 1 else 0) :: Int
+        vecDireccion = SDL.V2 (fromIntegral dirX) (fromIntegral dirY) :: SDL.V2 Float
+
+        anguloActual = entidad LMi.^. GType.entBox . GType.boxAng
+        velRotBase   = entidad LMi.^. GType.entMov . GType.movRot
+
+    let nuevoAngulo =
+            if vecDireccion == SDL.V2 0 0
+            then anguloActual
+            else
+                let rads        = atan2 (fromIntegral dirY) (fromIntegral dirX)
+                    targetAng   = rads * (180 / pi)
+                    diff        = FAng.diferenciaAngular anguloActual targetAng
+                    multiplicador = 1.0 + (diff / 180.0) * 3.0
+                    velRotFinal   = velRotBase * multiplicador
+                in FAng.suavizarAngulo anguloActual targetAng velRotFinal
+
+    PType.jugEnt . GType.entBox . GType.boxAng LMi..= nuevoAngulo
+
+
+desplazarJugadorM :: Types.Input -> [GType.Box] -> CMS.State PType.Jugador ()
+desplazarJugadorM input mapObstaculos = do
+    jugador <- CMS.get
+
+    let entidad      = jugador LMi.^. PType.jugEnt
+        runFactor    = jugador LMi.^. PType.factCorrer
+        anguloActual = entidad LMi.^. GType.entBox . GType.boxAng
+        velBase      = entidad LMi.^. GType.entMov . GType.movVel
+
+    let dirX = (if input LMi.^. Types.derecha then 1 else 0) - (if input LMi.^. Types.izquierda then 1 else 0) :: Int
+        dirY = (if input LMi.^. Types.abajo   then 1 else 0) - (if input LMi.^. Types.arriba  then 1 else 0) :: Int
+        hayMovimiento = dirX /= 0 || dirY /= 0
+        estaCorriendo = input LMi.^. Types.shift
+        multCorrer    = if estaCorriendo then runFactor else 1.0
+        ventanaTolerancia = 90.0
+
+        magnitud = 
+            if not hayMovimiento 
+            then 0.0 
+            else
+                if estaCorriendo
+                then velBase * multCorrer
+                else
+                    let rads      = atan2 (fromIntegral dirY) (fromIntegral dirX)
+                        targetAng = rads * (180 / pi)
+                        diff      = FAng.diferenciaAngular anguloActual targetAng
+                        factorAlineacion = 
+                            if diff >= ventanaTolerancia
+                            then 0.0
+                            else (ventanaTolerancia - diff) / ventanaTolerancia
+                    in velBase * multCorrer * factorAlineacion
+
+    let vecDir       = FAng.anguloAVector anguloActual
+        velIntencion = vecDir LV.^* magnitud
+
+    let entidadFinal = FMen.moverEntidad velIntencion mapObstaculos entidad
+    
+    PType.jugEnt LMi..= entidadFinal
 
 cambiarArmaSiguiente :: PType.Jugador -> PType.Jugador
 cambiarArmaSiguiente jug =

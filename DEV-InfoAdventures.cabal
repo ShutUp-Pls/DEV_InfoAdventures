@@ -62,6 +62,7 @@ executable DEV-InfoAdventures
         ,lens
         ,microlens
         ,microlens-th
+        ,microlens-mtl
         ,process
     hs-source-dirs:   app, src
 

@@ -95,7 +95,7 @@ handleGameplay input = do
     if vidaPostCombate <= 0
         then triggerDeath jugadorGolpeado enemigosPostCombate
         else do
-            let jugadorMovido = PJ.moverJugador input jugadorGolpeado mapa
+            let jugadorMovido = PJ.moverJugadorP input jugadorGolpeado mapa
             let (jugadorConItems, itemsRestantes, tiempoGanado) = handleItems jugadorMovido (gs LMi.^. Types.items)
 
             let isShooting = input LMi.^. Types.disparar

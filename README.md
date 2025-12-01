@@ -1,54 +1,116 @@
-## 🛠️ Refactorización y Uso de Monad State
+# Informe de Desarrollo:
 
-Entre la versión `v1.0.0.0` y `v1.0.0.1`, tras un avance grande pero sin orden, tocó refactorizar el codigo. Durante este proceso hice 2 cosas:
+### 🛠️ Refactorización y Uso de Monad State: El Caso del Jugador
 
-### El Problema: "State Threading" Manual
+Durante el desarrollo de la versión `v1.0.1.0` a `v1.0.1.1`, identificamos un área crítica donde la programación puramente funcional clásica estaba generando código difícil de mantener y extender.
 
-Tras terminada la versión `v1.0.0.0`, algunas de las firmas del modulo (`Personajes.Zombie`) se veían algo así:
+1. **El Problema:
+"Cascada de declaraciones dependientes en un lenguaje fuertemente tipado"**
 
-```haskell
--- Código original (threading manual)
-updateEnemies :: PType.Jugador -> [PType.Zombie] -> [GType.Box] -> [PType.Zombie]
-limpiarZombiesMuertos :: [PType.Zombie] -> [PType.Zombie]
-limpiarMuertos :: [Zombie] -> [Zombie]
-resolverColisionesEntreZombies :: [PType.Zombie] -> [PType.Zombie]
-dañarZombieEnIndice :: Int -> Float -> [PType.Zombie] -> [PType.Zombie]
-aplicarImpactoZombie :: Int -> Int -> Float -> [PType.Zombie] -> [PType.Zombie]
-```
-Y se usaban en todo el código de forma 
-```haskell
--- Uso en el ciclo de juego:
-```
-
-Esto presentaba dos problemas:
-
-1.  **Verbosidad:** Era necesario crear nombres de variables temporales para cada paso intermedio.
-2.  **Propenso a errores:** Era fácil pasar `zombiesMovidos` en lugar de `zombiesColisionados` por error en una línea subsecuente.
-
-### La Solución: Abstracción con Monad State
-
-Basándonos en lo visto en clases, donde las Mónadas introducen un contexto para aplicar funciones, identificamos que aquí el contexto necesario era **el estado mutable de la lista de enemigos**.
-
-Al igual que la notación `do` nos permite encadenar operaciones secuenciales evitando la anidación excesiva de `lambdas` o `case`, utilizamos `Control.Monad.State` para encapsular la lista de zombies.
-
-**Refactorización Implementada:**
-
-Definimos un tipo monádico para las operaciones de zombies:
+En la implementación de la versión `v1.0.1.0` del movimiento del jugador (`Personajes.Jugador.moverJugador`), nos encontramos con un patrón de "cascada" de *let bindings*. Cada línea de lógica transformaba el dato y generaba una nueva variable temporal que debía ser pasada con cuidado a la siguiente función.
 
 ```haskell
-State [PType.Zombie] a
+moverJugador :: Types.Input -> PType.Jugador -> [GType.Box] -> PType.Jugador
+moverJugador input jugadorActual mapObstaculos = 
+    let 
+        entidadInicial  = jugadorActual LMi.^. PType.jugEnt
+        runFactor       = jugadorActual LMi.^. PType.factCorrer
+        entidadRotada   = FMen.girarEntidadPorTeclado input entidadInicial
+        velBase         = entidadRotada LMi.^. GType.entMov . GType.movVel
+        anguloActual    = entidadRotada LMi.^. GType.entBox . GType.boxAng
+        magnitud        = FAng.magnitudPorTeclado input velBase runFactor anguloActual
+        vecDir          = FAng.anguloAVector anguloActual
+        velIntencion    = vecDir LV.^* magnitud
+        jugadorFinal    = FMen.moverEntidad velIntencion mapObstaculos entidadRotada
+    in  jugadorActual LMi.& PType.jugEnt LMi..~ jugadorFinal
 ```
+Además de la enorme *Verbosidad*, si una función cambiaba su tipo de salida (por ejemplo: `FMen.girarEntidadPorTeclado`), entonces todas las operaciones hacía abajo debían ser revisadas y modificadas para coincidir con este tipo (*Propio de ser un lenguaje fuertemente tipado y de tipos estaticos.*). Esto, pensando en el futuro, reducía enormemente la escalabilidad y la posibilidad de hacer grandes cambios sin preocuparse de dañar por completo el código.
 
-Esto transformó nuestras funciones de transformación (`[Zombie] -> [Zombie]`) en acciones monádicas (`ZombieM ()`):
+---
+
+2. **Candidato para Monad State**
+
+Basándonos en lo visto en clases, donde las Mónadas introducen un contexto para aplicar funciones, identificamos que aquí el contexto necesario era *el estado mutable del tipo Jugador*.
+
+También, la notación `do` de las monadas permite encadenar operaciones secuenciales sobre ese contexto, pudiendo evitar la *cascada de declaraciones*.
+
+Sabiendo esto, la pregunta era: *¿Podemos aprovechar estas caracteristicas para nuestro `moverJugador`?*
+
+- `moverJugador` transforma un `PType.Jugador` en otro `PType.Jugador`.✅
+- Tanto `FMen.moverEntidad` como `FMen.girarEntidadPorTeclado` devuelven un estado del jugador.✅
+
+Esto encaja con la Mónada State, que permite encadenar transformaciones sobre un estado implícito sin cargar manualmente el valor actualizado en cada paso.
+
+---
+
+3. **Aplicación de la Mónada**
+
+*Repatriamos* las funciones puras de `Fisica.MovEntidad` al modulo `Personajes.Jugador` y las convertimos en acciones monádicas. Convirtiendolas de la siguiente forma:
+
+**Transformación de firmas:**
 
 ```haskell
+-- Antes (Pura)
+girarEntidadPorTeclado :: Types.Input -> GType.Entidad -> GType.Entidad
+moverEntidad :: SDL.V2 Float -> [GType.Box] -> GType.Entidad -> GType.Entidad
+
+-- Después (Monádica)
+girarJugadorM :: Types.Input -> CMS.State PType.Jugador ()
+desplazarJugadorM :: Types.Input -> [GType.Box] -> CMS.State PType.Jugador ()
 ```
 
-### Resultado: Composición Limpia
+Esto permite:
 
-Gracias a la implementación de la instancia `Monad`, pude usar el operador `>>=` (bind) implícitamente a través de la notación `do`, permitiendo que el compilador se encargue de pasar el estado de una función a otra:
+- Leer partes del jugador con `CMS.gets`.
+- Modificar el estado con `CMS.modify` (En nuestro caso, lenses: `.=`, `%=`).
+- Eliminar variables temporales y cascadas de `=`.
+
+Además, es más parecido a un paradigma imperativo donde:
+- "*Dado un input, modifica al jugado*".
+- "*Dado un input y el mapa, modifica al jugador*"
+---
+
+4. **Resultado Final**
+
+La nueva función `moverJugador` (ahora monádica) expresa acciones secuenciales en lugar de transformaciones de datos explícitas, reduciendo **exageradamente** el flujo de los datos sin cambiar realmente la logica de las funciones que la componen, solo sus firmas.
 
 ```haskell
+-- Código Refactorizado (Estilo Monádico)
+moverJugador :: Types.Input -> [GType.Box] -> CMS.State PType.Jugador ()
+moverJugador input mapObstaculos = do
+    girarJugadorM input
+    desplazarJugadorM input mapObstaculos
 ```
+Así, la posibilidad de extender y escalar el movimiento hacía otro estado del jugador (por ejemplo *"Saltar"*) se vería ampliamente facilitado al no necesitar preocuparnos de la entrada o la salida de las acciones que le subyancen. A diferencia de la cascada de declaraciones que teníamos al principio donde si no eramos cuidadoso con las entradas y saalidas de las acciones que subyacen a este nuevo estado del jugador, se nos caía todo.
 
-Esta refactorización cumple con el requisito funcional de la tarea y demuestra el poder de las mónadas para abstraer la "fontanería" (plumbing) del paso de datos, permitiéndonos escribir código imperativo dentro de un lenguaje funcional puro.
+En resumen, al hacer este cambio:
+
+- Eliminamos el "Pipeline" del paso de datos.
+- Aumentamos la legibilidad mediante notación `do`.
+- Permite un estilo casi imperativo sin renunciar a la pureza funcional y la seguridad de tipos de Haskell.
+
+---
+
+~~5.-***¿Y la extracción de datos?***~~
+
+Antes, manejo de datos explicito:
+```haskell
+...     velBase         = entidadRotada LMi.^. GType.entMov . GType.movVel
+        anguloActual    = entidadRotada LMi.^. GType.entBox . GType.boxAng
+        magnitud        = FAng.magnitudPorTeclado input velBase runFactor anguloActual
+        vecDir          = FAng.anguloAVector anguloActual
+        velIntencion    = vecDir LV.^* magnitud
+...     jugadorFinal    = FMen.moverEntidad velIntencion mapObstaculos entidadRotada
+```
+Ahora, manejo de datos implicito:
+```haskell
+desplazarJugadorM :: Types.Input -> [GType.Box] -> CMS.State PType.Jugador ()
+desplazarJugadorM input mapObstaculos = do
+    jugador <- CMS.get
+    let entidad      = jugador LMi.^. PType.jugEnt
+        runFactor    = jugador LMi.^. PType.factCorrer
+        anguloActual = entidad LMi.^. GType.entBox . GType.boxAng
+        velBase      = entidad LMi.^. GType.entMov . GType.movVel
+...
+```
+Cómo cada `monadeState` lo que hace es cambiar el estado, llamese *"los datos del jugador"*, la siguiente `monadeState` simplemente recupera esos datos de estado ya mutado y opera con ellos desde el principio en su definición. Nos deshacemos de todo el manejo de datos intermedio gracias a esto.
