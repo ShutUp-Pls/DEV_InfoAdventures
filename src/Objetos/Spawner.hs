@@ -32,7 +32,7 @@ posicionAleatoria centro radio gen0 =
         y = r * sin v
     in (centro + SDL.V2 x y, gen2)
 
-actualizarSpawners :: Float -> SR.StdGen -> [OType.Spawner] -> ([OType.Spawner], [PType.Zombie], [OType.ItemBuff], SR.StdGen)
+actualizarSpawners :: Float -> SR.StdGen -> [OType.Spawner] -> ([OType.Spawner], [PType.Zombie], [GType.Item], SR.StdGen)
 actualizarSpawners dt genInicial listaSpawners = 
     foldr procesar ([], [], [], genInicial) listaSpawners
   where
@@ -53,13 +53,13 @@ actualizarSpawners dt genInicial listaSpawners =
 
                        OType.SpawnEnemigo enemigoModelo -> 
                            let enemigoFinal = enemigoModelo 
-                                    LMi.& PType.eneEnt . GType.entBox . GType.boxPos LMi..~ posSpawn
+                                    LMi.& PType.zmbEnt . GType.entBox . GType.boxPos LMi..~ posSpawn
                            in ([enemigoFinal], [])
 
                        OType.SpawnItem itemModelo -> 
                            let newItem = itemModelo 
-                                    LMi.& OType.iteBox . GType.boxPos LMi..~ posSpawn
-                                    LMi.& OType.iteAct LMi..~ True
+                                    LMi.& GType.iteBox . GType.boxPos LMi..~ posSpawn
+                                    LMi.& GType.iteAct LMi..~ True
                            in ([], [newItem])
 
                in (spawnerReiniciado : sAcc, nuevosEnemigos ++ eAcc, nuevosItems ++ iAcc, gen2)

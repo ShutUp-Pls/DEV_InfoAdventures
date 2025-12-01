@@ -2,29 +2,26 @@
 module Objetos.Types where
 -- Módulos del sistema
 import qualified SDL
-import qualified Data.Text          as DT
 import qualified Lens.Micro.TH      as LMT
 -- Módulos propios
-import qualified Personajes.Types   as PT
 import qualified Globals.Types      as GType
+import qualified Personajes.Types   as PType
 
-idBuffVel :: Int
-idBuffVel = 1
+data ComportamientoParticula 
+    = MovimientoLineal
+    | MovimientoGradualDown
+    deriving (Show, Eq)
 
-idBuffVid :: Int
-idBuffVid = 2
-
-data ItemBuff = ItemBuff
-    { _iteBox   :: GType.Box
-    , _iteBuf   :: GType.Buff
-    , _iteNom   :: DT.Text
-    , _iteAct   :: Bool
+data Particula = Particula
+    { _parEnt    :: GType.Entidad
+    , _parTip    :: ComportamientoParticula
+    , _parId     :: Int
     } deriving (Show, Eq)
-LMT.makeLenses ''ItemBuff
+LMT.makeLenses ''Particula
 
 data SpawnType 
-    = SpawnEnemigo PT.Zombie
-    | SpawnItem ItemBuff
+    = SpawnEnemigo PType.Zombie
+    | SpawnItem GType.Item
     deriving (Show, Eq)
 
 data Spawner = Spawner
@@ -35,19 +32,6 @@ data Spawner = Spawner
     , _tiempoActual  :: Float
     } deriving (Show, Eq)
 LMT.makeLenses ''Spawner
-
-data ComportamientoParticula 
-    = MovimientoLineal
-    | MovimientoGradualDown
-    deriving (Show, Eq)
-
-data Particula = Particula
-    { _parBox    :: GType.Box
-    , _parVel    :: GType.Movimiento
-    , _parVid    :: GType.Vida
-    , _parTip    :: ComportamientoParticula
-    } deriving (Show, Eq)
-LMT.makeLenses ''Particula
 
 data Camara = Camara
     { _posCamara    :: SDL.V2 Float

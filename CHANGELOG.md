@@ -136,8 +136,25 @@
   * Se ordena el dibujado y se añade un overlay a la pantalla de muerte.
   * Cambiado los graficos de `SDL.V3` a `SDL.V4`.
   * ¡Nuevo mapa! Ya era hora.
-  * ¡Nuevo enemigo! Ya era hora x2.
   * Se ajusta el SAT para que ahora calcule basandose en el centro del jugador sumado a pasos simulados ¡Ya no se atraviesan paredes! (Este bug lo tenía desde que cambié a SAT)
 
   >*Nota*: El añadido de particulas me sirvió para testear los limites del renderizar de esta forma tantos dibujos en movimiento. (10.000 particulas y aún así el movimiento fue fluido, solo disminuyeron un pocos los FPS)
   >*Nota*: La refactorización fue un infierno que me llevó todo el día.
+
+ ## 0.1.11.0 -- 2025-11-29
+  * Se corrige el `CHANGELOG.md` anterior. Mentí, no se agregó nuevo enemigo.
+  * Se agrega el primer arma y la capacidad de matar enemigos.
+    * Se añade `Disparo.hs` en 'Fisca' para gestionar la logica de disparo.
+    * Se añade `Bala.hs` en 'Objetos'. Altamente basado en `Particula.hs` para generar balas.
+    * Se añade `Arma.hs`' enfocado en gestionar los distintos tipos de arma.
+    * Se introduce el uso de 'Lens' completo para usar 'makePrism' en el patternMatch de Data Types.
+    * Se cambia de `ItemsBuff.hs` a `Buff.hs` y se equivale la logica de los items.
+
+## 1.0.0.0 -- 2025-11-29
+  * Otra gran refactorización en fisicas, particulas y demases para asegurar un sistema de combate escalable.
+  * Se añade el tiempo como mecanica principal y objetivo del juego, surival contra reloj.
+  * Se añade un mapa mucho más grande.
+  * Se añade launcher con la posibilidad de activar tutorial y elegir mapa (Aún no implementado).
+  * Se añaden mas armas y más enemigos.
+
+    >*Nota*: Se puede decir que se puede jugar, el gameplay es muy pobre, pero al menos ya no es un intento de juego, ahora si tiene un objetivo y variedad de formas de llevarlo a cabo. Se hicieron muchas cosas, entré en flujo y me olvidé de actualizar el changelog.

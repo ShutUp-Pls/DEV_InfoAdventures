@@ -19,21 +19,23 @@ executable DEV-InfoAdventures
     other-modules:
         Fisica.Angulos
         Fisica.Colisiones
-        Fisica.Movimiento
+        Fisica.Disparo
+        Fisica.MovEntidad
+        Fisica.MovParticulas
         Fisica.SAT
         Fisica.Vectores
 
         Globals.Types
+        Globals.Camara
 
         Graficos.Dibujado
+        Graficos.HUD
         Graficos.Render
 
         Mapas.Mapa
 
-        Objetos.Camara
-        Objetos.Cono
-        Objetos.HUD
-        Objetos.ItemBuff
+        Objetos.Arma
+        Objetos.Buff
         Objetos.Particula
         Objetos.Spawner
         Objetos.Types
@@ -41,16 +43,18 @@ executable DEV-InfoAdventures
         Personajes.Control
         Personajes.IA
         Personajes.Jugador
-        Personajes.Zombie
         Personajes.Types
+        Personajes.Zombie
 
         Types
         Inicio
         Juego
+        Launcher
     build-depends:
         base ^>=4.17.2.0
         ,sdl2
         ,sdl2-ttf
+        ,sdl2-image
         ,linear
         ,bytestring
         ,directory
@@ -58,8 +62,10 @@ executable DEV-InfoAdventures
         ,mtl 
         ,vector
         ,random
+        ,lens
         ,microlens
         ,microlens-th
+        ,process
     hs-source-dirs:   app, src
 
     default-language: Haskell2010

@@ -6,9 +6,9 @@ import qualified Linear.Vector  as LV
 import qualified Lens.Micro     as LMi
 import qualified Control.Monad.State as CMS
 -- Módulos propios
-import qualified Fisica.Angulos as FA
-import qualified Fisica.Movimiento as FM
-import qualified Globals.Types  as GType
+import qualified Fisica.Angulos     as FA
+import qualified Fisica.MovEntidad  as FMW
+import qualified Globals.Types      as GType
 
 enRangoDeVision :: SDL.V2 Float -> Float -> SDL.V2 Float -> Bool
 enRangoDeVision posObservador rangoVision posObjetivo =
@@ -32,9 +32,11 @@ rutinaPersecucion posObjetivo detectado mapObstaculos = do
     let velBase = entidad LMi.^. GType.entMov . GType.movVel
     let facBase = entidad LMi.^. GType.entMov . GType.movFac
 
-    let magnitud = if detectado then velBase * facBase else 0
+    let magnitud = if detectado
+                   then velBase * facBase
+                   else 0
     
     let forwardDir = FA.anguloAVector nuevoAngulo
     let velocidadIntencion = forwardDir LV.^* magnitud
 
-    FM.moverEntidad velocidadIntencion mapObstaculos
+    FMW.moverEntidad velocidadIntencion mapObstaculos

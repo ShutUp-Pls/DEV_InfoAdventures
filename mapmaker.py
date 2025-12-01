@@ -46,9 +46,13 @@ class MainApp(tk.Tk):
             codigo_raw = txt.get("1.0", tk.END)
             datos = mph.parsear_codigo_haskell(codigo_raw)
             
-            if not datos: return messagebox.showwarning("Importar", "No se encontraron obstáculos válidos en el texto.")
+            if not datos: 
+                return messagebox.showwarning("Importar", "No se encontraron obstáculos válidos en el texto o el formato no coincide (GType.Box).")
+            
             self.map_canvas.clear_all()
-            for (x, y, w, h) in datos: self.map_canvas.add_obstacle(x, y, w, h)
+            # Ahora desempaquetamos 5 valores (x, y, w, h, angle)
+            for (x, y, w, h, angle) in datos: 
+                self.map_canvas.add_obstacle(x, y, w, h, angle)
                 
             messagebox.showinfo("Éxito", f"Se han importado {len(datos)} obstáculos.")
             top.destroy()

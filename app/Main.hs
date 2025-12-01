@@ -3,62 +3,77 @@ module Main where
 
 -- Módulos del sistema
 import qualified SDL
-import qualified SDL.Font as Font
-import qualified Control.Monad as CM
-import qualified Control.Monad.State as CMS
+import qualified SDL.Font               as Font
+import qualified Control.Monad.State    as CMS
+import qualified Lens.Micro             as LMi
 
 -- Módulos propios
-import qualified Types
 import qualified Juego
 import qualified Inicio
-import qualified Graficos.Dibujado as RD
-import qualified Graficos.Render as RR
+import qualified Launcher
+import qualified Types
+import qualified Personajes.Types       as PType
+import qualified Globals.Types          as GType
+import qualified Graficos.Dibujado      as RD
+import qualified Graficos.Render        as RR
 
 main :: IO ()
 main = do
-    -- Inicializar SDL
+    -- 1. Inicialización Global (SDL y Video)
     SDL.initializeAll
     Font.initialize
 
-    -- Crear la ventana y cargar fuente
+    -- Creamos la ventana y el renderer UNA VEZ para toda la aplicación
     window <- SDL.createWindow "Juego full Haskell" SDL.defaultWindow
         { SDL.windowInitialSize = SDL.V2 RD.screenWidth RD.screenHeight }
-    
-    font <- Font.load "assets/font.ttf" 24
     renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
+
+    -- 2. Entramos al ciclo maestro de la aplicación
+    appFlow renderer window
+
+    -- 3. Limpieza final al cerrar la app completa
+    SDL.destroyRenderer renderer
+    SDL.destroyWindow window
+    Font.quit
+    SDL.quit
+
+appFlow :: SDL.Renderer -> SDL.Window -> IO ()
+appFlow renderer window = do
+    decision <- Launcher.runLauncher renderer
     
-    -- Crear una textura blanca de 1x1 para usar como placeholder
+    case decision of
+        Launcher.ActionExit -> 
+            putStrLn "Saliendo de la aplicación..." 
+        Launcher.ActionPlay modoTutorial -> do
+            putStrLn $ "Iniciando juego... (Tutorial: " ++ show modoTutorial ++ ")"
+            correrJuego renderer modoTutorial
+            appFlow renderer window
+
+correrJuego :: SDL.Renderer -> Bool -> IO ()
+correrJuego renderer isTutorial = do
+    font <- Font.load "assets/font.ttf" 24
+    
     surface <- SDL.createRGBSurface (SDL.V2 1 1) SDL.RGB888
     SDL.surfaceFillRect surface Nothing (SDL.V4 255 255 255 255)
     blockTexture <- SDL.createTextureFromSurface renderer surface
     skinTexture  <- SDL.createTextureFromSurface renderer surface
     SDL.freeSurface surface
+    
+    estadoJuego <- Inicio.estadoInicial isTutorial
+    
+    gameLoop renderer font blockTexture skinTexture estadoJuego
 
-    -- Crear renderizado e iniciar loop con el estado inicial del juego
-    estadoJuego <- Inicio.estadoInicial
-    loop renderer font blockTexture skinTexture estadoJuego
-
-    -- Limpiar al salir
-    Font.free font
-    Font.quit
     SDL.destroyTexture skinTexture
     SDL.destroyTexture blockTexture
-    SDL.destroyRenderer renderer
-    SDL.destroyWindow window
-    SDL.quit
+    Font.free font
 
--- El bucle principal
-loop :: SDL.Renderer -> Font.Font -> SDL.Texture -> SDL.Texture -> Types.GameState -> IO ()
-loop renderer font blockTexture skinTexture currentState = do
-
-    -- Manejo de Eventos
+-- El bucle del juego (ligeramente modificado para retornar () en vez de cerrar SDL)
+gameLoop :: SDL.Renderer -> Font.Font -> SDL.Texture -> SDL.Texture -> Types.GameState -> IO ()
+gameLoop renderer font blockTexture skinTexture currentState = do
     events <- SDL.pollEvents
     let eventPayloads = map SDL.eventPayload events
-    let quitEvent = SDL.QuitEvent `elem` eventPayloads
+    let userQuit = SDL.QuitEvent `elem` eventPayloads
 
-    -- Mapear teclado al Input
-    -- NOTA: Al usar Lenses en Types.hs, los campos reales tienen guion bajo (_).
-    -- Debemos usar esos nombres (_arriba, _abajo) para construir el registro.
     keyboardState <- SDL.getKeyboardState
     let input = Types.Input
           { Types._arriba       = keyboardState SDL.ScancodeW
@@ -71,15 +86,25 @@ loop renderer font blockTexture skinTexture currentState = do
           , Types._zoomOut      = keyboardState SDL.ScancodeSlash
           , Types._zoomIn       = keyboardState SDL.ScancodeRightBracket
           , Types._teclaRespawn = keyboardState SDL.ScancodeY
+          , Types._teclaSalir   = keyboardState SDL.ScancodeX
+          , Types._disparar     = keyboardState SDL.ScancodeJ
+          , Types._prevWeapon   = keyboardState SDL.ScancodeK
+          , Types._nextWeapon   = keyboardState SDL.ScancodeL
           }
 
-    -- Lógica del juego (ejecutamos el State Monad sobre el estado actual)
-    -- Juego.updateGame ahora usa Lenses internamente como definimos antes
     let newState = CMS.execState (Juego.updateGame input) currentState
+    
+    -- Lógica de muerte o salida
+    let vidaActual               = newState LMi.^. Types.jugador LMi.^. PType.jugEnt . GType.entVid . GType.vidAct
+    let tiempoRestante           = newState LMi.^. Types.tiempoJuego
+    let estaMuerto = vidaActual <= 0 || tiempoRestante <= 0
+    
+    -- Si el usuario presiona X (Salir) o muere, el loop termina
+    let returnToMenu = (estaMuerto && Types._teclaSalir input) || (userQuit)
 
-    -- Renderizado
-    RR.renderGame renderer font blockTexture skinTexture newState
-
-    -- Control de Frames y Recursión [1000ms/60fps ≈ 16ms delay]
+    RR.renderGame renderer font blockTexture skinTexture input newState
     SDL.delay 16
-    CM.unless quitEvent (loop renderer font blockTexture skinTexture newState)
+
+    if returnToMenu
+        then putStrLn "Juego terminado. Volviendo al menú..."
+        else gameLoop renderer font blockTexture skinTexture newState
