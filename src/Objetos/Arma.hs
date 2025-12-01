@@ -2,9 +2,9 @@
 module Objetos.Arma where
 -- Módulos del sistema
 import qualified SDL
-import qualified Lens.Micro     as LMi
-import qualified Linear.Vector  as LV
-import qualified Data.Text      as DT
+import qualified Lens.Micro         as LMi
+import qualified Linear.Vector      as LV
+import qualified Data.Text          as DT
 -- Módulos propios
 import qualified Graficos.Dibujado  as GD
 import qualified Globals.Types      as GType

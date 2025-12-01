@@ -4,23 +4,23 @@ import qualified SDL
 import qualified System.Random  as SR
 import qualified Lens.Micro     as LMi
 -- Módulos propios
-import qualified Objetos.Types      as OType
+import qualified Types
 import qualified Globals.Types      as GType
 import qualified Personajes.Types   as PType
 import qualified Graficos.Dibujado  as GD
 
-crearSpawner :: SDL.V2 Float -> Float -> OType.SpawnType -> (Float, Float) -> OType.Spawner
-crearSpawner pos radio tipo (tMin, tMax) = OType.Spawner
-    { OType._spaBox = GType.Box
+crearSpawner :: SDL.V2 Float -> Float -> Types.SpawnType -> (Float, Float) -> Types.Spawner
+crearSpawner pos radio tipo (tMin, tMax) = Types.Spawner
+    { Types._spaBox = GType.Box
         { GType._boxPos = pos
         , GType._boxTam = SDL.V2 32 32
         , GType._boxAng = 0
         , GType._boxRad = 16
         }
-    , OType._areaSpawn    = radio
-    , OType._tipoSpawn    = tipo
-    , OType._rangoTiempo  = (tMin, tMax)
-    , OType._tiempoActual = tMin
+    , Types._areaSpawn    = radio
+    , Types._tipoSpawn    = tipo
+    , Types._rangoTiempo  = (tMin, tMax)
+    , Types._tiempoActual = tMin
     }
 
 posicionAleatoria :: SDL.V2 Float -> Float -> SR.StdGen -> (SDL.V2 Float, SR.StdGen)
@@ -32,31 +32,31 @@ posicionAleatoria centro radio gen0 =
         y = r * sin v
     in (centro + SDL.V2 x y, gen2)
 
-actualizarSpawners :: Float -> SR.StdGen -> [OType.Spawner] -> ([OType.Spawner], [PType.Zombie], [GType.Item], SR.StdGen)
+actualizarSpawners :: Float -> SR.StdGen -> [Types.Spawner] -> ([Types.Spawner], [PType.Zombie], [GType.Item], SR.StdGen)
 actualizarSpawners dt genInicial listaSpawners = 
     foldr procesar ([], [], [], genInicial) listaSpawners
   where
     procesar spawner (sAcc, eAcc, iAcc, genActual) =
-        let nuevoTiempo = (spawner LMi.^. OType.tiempoActual) - dt
+        let nuevoTiempo = (spawner LMi.^. Types.tiempoActual) - dt
         in if nuevoTiempo <= 0
            then 
                let 
-                   posCentro = spawner LMi.^. OType.spaBox . GType.boxPos
-                   radio     = spawner LMi.^. OType.areaSpawn
+                   posCentro = spawner LMi.^. Types.spaBox . GType.boxPos
+                   radio     = spawner LMi.^. Types.areaSpawn
                    (posSpawn, gen1) = posicionAleatoria posCentro radio genActual
                    
-                   (tMin, tMax) = spawner LMi.^. OType.rangoTiempo
+                   (tMin, tMax) = spawner LMi.^. Types.rangoTiempo
                    (proxTiempo, gen2) = SR.randomR (tMin, tMax) gen1
 
-                   spawnerReiniciado = spawner LMi.& OType.tiempoActual LMi..~ proxTiempo
-                   (nuevosEnemigos, nuevosItems) = case spawner LMi.^. OType.tipoSpawn of
+                   spawnerReiniciado = spawner LMi.& Types.tiempoActual LMi..~ proxTiempo
+                   (nuevosEnemigos, nuevosItems) = case spawner LMi.^. Types.tipoSpawn of
 
-                       OType.SpawnEnemigo enemigoModelo -> 
+                       Types.SpawnEnemigo enemigoModelo -> 
                            let enemigoFinal = enemigoModelo 
                                     LMi.& PType.zmbEnt . GType.entBox . GType.boxPos LMi..~ posSpawn
                            in ([enemigoFinal], [])
 
-                       OType.SpawnItem itemModelo -> 
+                       Types.SpawnItem itemModelo -> 
                            let newItem = itemModelo 
                                     LMi.& GType.iteBox . GType.boxPos LMi..~ posSpawn
                                     LMi.& GType.iteAct LMi..~ True
@@ -64,13 +64,13 @@ actualizarSpawners dt genInicial listaSpawners =
 
                in (spawnerReiniciado : sAcc, nuevosEnemigos ++ eAcc, nuevosItems ++ iAcc, gen2)
            else 
-               let spawnerActualizado = spawner LMi.& OType.tiempoActual LMi..~ nuevoTiempo
+               let spawnerActualizado = spawner LMi.& Types.tiempoActual LMi..~ nuevoTiempo
                in (spawnerActualizado : sAcc, eAcc, iAcc, genActual)
 
-dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> OType.Spawner -> IO ()
+dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> Types.Spawner -> IO ()
 dibujar renderer texture camPos zoom spawner = do
-    let pos = spawner LMi.^. OType.spaBox . GType.boxPos
-    let tam = spawner LMi.^. OType.spaBox . GType.boxTam
-    let ang = spawner LMi.^. OType.spaBox . GType.boxAng
+    let pos = spawner LMi.^. Types.spaBox . GType.boxPos
+    let tam = spawner LMi.^. Types.spaBox . GType.boxTam
+    let ang = spawner LMi.^. Types.spaBox . GType.boxAng
     
     GD.dibujarTextura renderer texture camPos zoom pos tam ang (SDL.V4 128 0 128 255)

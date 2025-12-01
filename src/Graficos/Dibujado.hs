@@ -9,7 +9,7 @@ import qualified Linear.Vector      as LV
 import qualified Lens.Micro         as LMi
 import qualified Data.Text          as DT
 -- Módulos propios
-import qualified Globals.Types as GType
+import qualified Globals.Types      as GType
 
 type ParteArma = (SDL.V2 Float, SDL.V2 Float, SDL.V4 DW.Word8)
 

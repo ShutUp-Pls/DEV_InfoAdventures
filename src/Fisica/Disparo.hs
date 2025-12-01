@@ -7,11 +7,10 @@ import qualified Lens.Micro         as LMi
 -- Módulos propios
 import qualified Personajes.Types   as PType
 import qualified Globals.Types      as GType
-import qualified Objetos.Types      as OType
 import qualified Objetos.Particula  as OPart
 import qualified Objetos.Arma       as OArma
 
-procesarDisparo :: Float -> Bool -> SR.StdGen -> PType.Jugador -> ([OType.Particula], PType.Jugador, SR.StdGen)
+procesarDisparo :: Float -> Bool -> SR.StdGen -> PType.Jugador -> ([GType.Particula], PType.Jugador, SR.StdGen)
 procesarDisparo dt isClicking rng jugador = 
     let 
         maybeArma = jugador LMi.^? PType.jugEnt . GType.entHnd . GType.iteTipo . GType._EsArma
@@ -20,6 +19,7 @@ procesarDisparo dt isClicking rng jugador =
         Nothing -> ([], jugador, rng)
         Just wState ->
             let
+                -- 1. Lógica de Cooldown y Heat (Se mantiene igual)
                 myMaxHeat     = wState LMi.^. GType.eaMaxHeat
                 myHeatPerShot = wState LMi.^. GType.eaHeatPerShot
                 myCoolRate    = wState LMi.^. GType.eaCoolRate
@@ -33,28 +33,28 @@ procesarDisparo dt isClicking rng jugador =
                 newCool       = max 0 (currentCool - dt)
                 newHeatBase   = max 0 (currentHeat - (myCoolRate * dt))
                 isStillJammed = wasJammed && (newHeatBase > 0)
-
                 shouldShoot   = isClicking && (newCool <= 0) && not isStillJammed
 
             in if shouldShoot
                then
                     let 
-                        ent       = jugador LMi.^. PType.jugEnt
-                        box       = ent LMi.^. GType.entBox
-                        posTL     = box LMi.^. GType.boxPos
-                        size      = box LMi.^. GType.boxTam
-
-                        angleDeg  = box LMi.^. GType.boxAng
-                        center    = posTL + (size LV.^* 0.5)
-                        angleRad  = angleDeg * (pi / 180.0)
-                        dir       = SDL.V2 (cos angleRad) (sin angleRad)
-
-                        posSalida = center + (dir LV.^* 30.0)
+                        ent             = jugador LMi.^. PType.jugEnt
+                        box             = ent LMi.^. GType.entBox
+                        posTL           = box LMi.^. GType.boxPos
+                        size            = box LMi.^. GType.boxTam
+                        radio           = box LMi.^. GType.boxRad 
+                        angleDeg        = box LMi.^. GType.boxAng
+                        center          = posTL + (size LV.^* 0.5)
+                        
+                        angleRad        = angleDeg * (pi / 180.0)
+                        dir             = SDL.V2 (cos angleRad) (sin angleRad)
+                        distanciaSalida = radio + 5.0 
+                        posSalida       = center + (dir LV.^* distanciaSalida)
 
                         (nuevasParticulas, rngFinal) = 
                             if weaponId == OArma.idArmLanzallamas 
                             then OPart.generarAbanicoFuego posSalida angleDeg 5 rng
-                            else crearDisparoBala posSalida angleDeg rng
+                            else (OPart.generarProyectil OPart.idParBala posSalida angleDeg, rng)
 
                         heatPostShot = newHeatBase + myHeatPerShot
                         (finalHeat, finalJammed) = 
@@ -81,15 +81,3 @@ procesarDisparo dt isClicking rng jugador =
                         jugadorActualizado = jugador LMi.& PType.jugEnt . GType.entHnd . GType.iteTipo . GType._EsArma LMi..~ nuevoEstadoArma
                         
                     in ([], jugadorActualizado, rng)
-
-crearDisparoBala :: SDL.V2 Float -> Float -> SR.StdGen -> ([OType.Particula], SR.StdGen)
-crearDisparoBala posSalida angleDeg rng =
-    let
-        posAjustada = posSalida - (SDL.V2 (OPart.tamanoBala/2) (OPart.tamanoBala/2))
-        entidadBala = OPart.crearEntidadParticula OPart.idParBala posAjustada angleDeg
-        balaNueva   = OType.Particula 
-                        { OType._parEnt = entidadBala
-                        , OType._parTip = OType.MovimientoLineal
-                        , OType._parId  = OPart.idParBala
-                        }
-    in ([balaNueva], rng)

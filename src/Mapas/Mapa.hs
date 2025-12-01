@@ -1,10 +1,10 @@
 module Mapas.Mapa where
 -- Modulos del sistema
 import qualified SDL
-import qualified Lens.Micro as LMi
+import qualified Lens.Micro         as LMi
 -- Modulos propios
-import qualified Globals.Types as GType
-import qualified Graficos.Dibujado as GD
+import qualified Globals.Types      as GType
+import qualified Graficos.Dibujado  as GD
 
 mapaIni :: [GType.Box]
 mapaIni = 

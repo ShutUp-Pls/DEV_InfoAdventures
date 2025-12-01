@@ -4,39 +4,42 @@ import qualified SDL
 import qualified Linear.Metric  as LMe
 import qualified Linear.Vector  as LV
 import qualified Lens.Micro     as LMi
-import qualified Control.Monad.State as CMS
 -- Módulos propios
 import qualified Fisica.Angulos     as FA
 import qualified Fisica.MovEntidad  as FMW
 import qualified Globals.Types      as GType
 
-enRangoDeVision :: SDL.V2 Float -> Float -> SDL.V2 Float -> Bool
-enRangoDeVision posObservador rangoVision posObjetivo =
-    LMe.distance posObservador posObjetivo < rangoVision
+rutinaPersecucion :: SDL.V2 Float -> Bool -> [GType.Box] -> GType.Entidad -> GType.Entidad
+rutinaPersecucion posObjetivo detectado mapObstaculos entidad =
+    let 
+        entidadOrientada = girarHaciaObjetivo posObjetivo detectado entidad
+        velIntencion     = calcularIntencionMovimiento detectado entidadOrientada
+    in  FMW.moverEntidad velIntencion mapObstaculos entidadOrientada
 
-rutinaPersecucion :: SDL.V2 Float -> Bool -> [GType.Box] -> CMS.State GType.Entidad ()
-rutinaPersecucion posObjetivo detectado mapObstaculos = do
-    entidad <- CMS.get
-    let posEnt    = entidad LMi.^. GType.entBox . GType.boxPos
-    let angActual = entidad LMi.^. GType.entBox . GType.boxAng
-    let rotSpeed  = entidad LMi.^. GType.entMov . GType.movRot
-    
-    let targetAng = FA.calcularAnguloHacia posEnt posObjetivo
-    
-    let nuevoAngulo = if detectado
-                      then FA.suavizarAngulo angActual targetAng rotSpeed
-                      else angActual
+girarHaciaObjetivo :: SDL.V2 Float -> Bool -> GType.Entidad -> GType.Entidad
+girarHaciaObjetivo posObjetivo detectado entidad =
+    let 
+        posEnt    = entidad LMi.^. GType.entBox . GType.boxPos
+        angActual = entidad LMi.^. GType.entBox . GType.boxAng
+        
+        nuevoAngulo = 
+            if detectado
+            then 
+                let rotSpeed  = entidad LMi.^. GType.entMov . GType.movRot
+                    targetAng = FA.calcularAnguloHacia posEnt posObjetivo
+                in FA.suavizarAngulo angActual targetAng rotSpeed
+            else angActual
+    in entidad LMi.& GType.entBox . GType.boxAng LMi..~ nuevoAngulo
 
-    CMS.modify $ \e -> e LMi.& GType.entBox . GType.boxAng LMi..~ nuevoAngulo
-
-    let velBase = entidad LMi.^. GType.entMov . GType.movVel
-    let facBase = entidad LMi.^. GType.entMov . GType.movFac
-
-    let magnitud = if detectado
-                   then velBase * facBase
-                   else 0
-    
-    let forwardDir = FA.anguloAVector nuevoAngulo
-    let velocidadIntencion = forwardDir LV.^* magnitud
-
-    FMW.moverEntidad velocidadIntencion mapObstaculos
+calcularIntencionMovimiento :: Bool -> GType.Entidad -> SDL.V2 Float
+calcularIntencionMovimiento detectado entidad =
+    if detectado
+    then 
+        let 
+            angulo   = entidad LMi.^. GType.entBox . GType.boxAng
+            velBase  = entidad LMi.^. GType.entMov . GType.movVel
+            facBase  = entidad LMi.^. GType.entMov . GType.movFac
+            magnitud = velBase * facBase
+            vectorDir = FA.anguloAVector angulo
+        in  vectorDir LV.^* magnitud
+    else SDL.V2 0 0

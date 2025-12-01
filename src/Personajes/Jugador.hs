@@ -2,17 +2,18 @@
 module Personajes.Jugador where
 -- Módulos del sistema
 import qualified SDL
-import qualified Control.Monad.State as CMS
-import qualified Lens.Micro          as LMi
+import qualified Lens.Micro         as LMi
+import qualified Linear.Vector      as LV
 -- Módulos propios
 import qualified Types
 import qualified Globals.Types      as GType
 import qualified Personajes.Types   as PType
 
-import qualified Fisica.Colisiones  as FC
-
 import qualified Graficos.Dibujado  as GD
-import qualified Personajes.Control as PControl
+
+import qualified Fisica.Angulos     as FAng
+import qualified Fisica.MovEntidad  as FMen
+import qualified Fisica.Vectores as FAng
 
 crearBoxJugador :: SDL.V2 Float -> GType.Box
 crearBoxJugador pos = GType.Box
@@ -56,7 +57,7 @@ crearEntidadJugador pos = GType.Entidad
 
 crearJugador :: SDL.V2 Float -> SDL.V2 Float -> PType.Jugador
 crearJugador startPos spawnPos = PType.Jugador
-    { PType._factCorrer = 0.75
+    { PType._factCorrer = 1.5
     , PType._spawnPoint = spawnPos
     , PType._jugEnt     = crearEntidadJugador startPos
     }
@@ -64,28 +65,16 @@ crearJugador startPos spawnPos = PType.Jugador
 moverJugador :: Types.Input -> PType.Jugador -> [GType.Box] -> PType.Jugador
 moverJugador input jugadorActual mapObstaculos = 
     let 
-        entidadInicial = jugadorActual LMi.^. PType.jugEnt
-        bonusRun       = jugadorActual LMi.^. PType.factCorrer
-        entidadFinal = CMS.execState (PControl.rutinaControl input bonusRun mapObstaculos) entidadInicial
-    in
-        jugadorActual LMi.& PType.jugEnt LMi..~ entidadFinal
-
-resolverCombate :: PType.Jugador -> [PType.Zombie] -> (PType.Jugador, [PType.Zombie])
-resolverCombate jug zombies = 
-    let (res, state) = CMS.runState (mapM procesarZombie zombies) jug
-    in (state, res)
-
-procesarZombie :: PType.Zombie -> CMS.State PType.Jugador PType.Zombie
-procesarZombie z = do
-    jugadorActual <- CMS.get
-    let jugEnt = jugadorActual LMi.^. PType.jugEnt
-        zEnt   = z LMi.^. PType.zmbEnt
-        zDmg   = z LMi.^. PType.zmbDamage
-
-    let (zEntModificada, jugEntModificada) = CMS.runState (FC.interaccionFisicaEntreEntidades zDmg zEnt) jugEnt
-
-    CMS.put (jugadorActual LMi.& PType.jugEnt LMi..~ jugEntModificada)
-    return (z LMi.& PType.zmbEnt LMi..~ zEntModificada)
+        entidadInicial  = jugadorActual LMi.^. PType.jugEnt
+        runFactor       = jugadorActual LMi.^. PType.factCorrer
+        entidadRotada   = FMen.girarEntidadPorTeclado input entidadInicial
+        velBase         = entidadRotada LMi.^. GType.entMov . GType.movVel
+        anguloActual    = entidadRotada LMi.^. GType.entBox . GType.boxAng
+        magnitud        = FAng.magnitudPorTeclado input velBase runFactor anguloActual
+        vecDir          = FAng.anguloAVector anguloActual
+        velIntencion    = vecDir LV.^* magnitud
+        jugadorFinal    = FMen.moverEntidad velIntencion mapObstaculos entidadRotada
+    in  jugadorActual LMi.& PType.jugEnt LMi..~ jugadorFinal
 
 cambiarArmaSiguiente :: PType.Jugador -> PType.Jugador
 cambiarArmaSiguiente jug =
@@ -102,7 +91,6 @@ cambiarArmaSiguiente jug =
             in jug LMi.& PType.jugEnt . GType.entHnd LMi..~ nuevaMano
                    LMi.& PType.jugEnt . GType.entInv LMi..~ nuevoInv
 
--- Lógica para cambiar al arma anterior ("K")
 cambiarArmaAnterior :: PType.Jugador -> PType.Jugador
 cambiarArmaAnterior jug =
     let 
@@ -117,6 +105,34 @@ cambiarArmaAnterior jug =
                 nuevoInv  = mano : init inv
             in jug LMi.& PType.jugEnt . GType.entHnd LMi..~ nuevaMano
                    LMi.& PType.jugEnt . GType.entInv LMi..~ nuevoInv
+
+equiparItem :: GType.Item -> PType.Jugador -> PType.Jugador
+equiparItem nuevoItem jug =
+    let 
+        entidad         = jug LMi.^. PType.jugEnt
+        mano            = entidad LMi.^. GType.entHnd
+        inv             = entidad LMi.^. GType.entInv
+        idMano          = mano LMi.^. GType.iteId
+        itemsExistentes = filter (\i -> i LMi.^. GType.iteId /= 0) (mano : inv)
+        
+        obtenerSlot :: GType.Item -> Int
+        obtenerSlot it = case it LMi.^. GType.iteBox . GType.boxPos of SDL.V2 x _ -> round x
+        slotsUsados = map obtenerSlot itemsExistentes
+        posibles = [0, 1, 2]
+        slotLibre = head $ filter (\x -> not (x `elem` slotsUsados)) (posibles ++ [0])
+        asignarSlot :: Int -> GType.Item
+        asignarSlot s = nuevoItem LMi.& GType.iteBox . GType.boxPos LMi..~ SDL.V2 (fromIntegral s) 0
+
+        cantInv = length inv
+        inventarioLleno = cantInv >= 2 
+    in 
+        if idMano == 0 
+        then jug LMi.& PType.jugEnt . GType.entHnd LMi..~ (asignarSlot 0)
+        else if not inventarioLleno
+             then jug LMi.& PType.jugEnt . GType.entInv LMi.%~ ((asignarSlot slotLibre) :)
+             else 
+                let slotActual = obtenerSlot mano
+                in jug LMi.& PType.jugEnt . GType.entHnd LMi..~ (asignarSlot slotActual)
 
 dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> PType.Jugador -> IO ()
 dibujar renderer skinTexture camPos zoom player = do

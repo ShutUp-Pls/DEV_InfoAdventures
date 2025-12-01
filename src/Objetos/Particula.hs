@@ -2,132 +2,139 @@ module Objetos.Particula  where
 -- Modulos del sistema
 import qualified SDL
 import qualified Lens.Micro     as LMi
+import qualified Linear.Vector  as LV
 import qualified System.Random  as SR
 -- Modulos propios
-import qualified Objetos.Types      as OType
 import qualified Globals.Types      as GType
+
 import qualified Graficos.Dibujado  as GD
 
-idParBala   :: Int
+idParBala, idParFuego, idParChispa, idParHumo :: Int
 idParBala   = 2000
-tamanoBala, velocidadBala, vidaBala, fuerzaBala :: Float
-tamanoBala = 8.0
-velocidadBala = 1000.0
-vidaBala = 2.0
-fuerzaBala = 20.0
-
-idParFuego :: Int
-idParFuego = 2003
-fuerzaFuego :: Float
-fuerzaFuego = 15.0
-
-idParChispa :: Int
 idParChispa = 2001
+idParHumo   = 2002
+idParFuego  = 2003
 
-tamanoChispa, velocidadChispa, vidaChispa :: Float
-tamanoChispa    = 6.0
-velocidadChispa = 300.0
-vidaChispa      = 0.3
-
-idParHumo :: Int
-idParHumo = 2002
-
-crearEntidadParticula :: Int -> SDL.V2 Float -> Float -> GType.Entidad
-crearEntidadParticula parId pos angulo = GType.Entidad
-    { GType._entBox = crearBoxParticula parId pos angulo
-    , GType._entMov = crearMovParticula parId
-    , GType._entVid = crearVidaParticula parId
-    , GType._entEmp = crearEmpujeParticula parId
-    , GType._entBuf = []
-    , GType._entInv = []
-    , GType._entHnd = GType.itemVacio
+data ParticulaConfig = ParticulaConfig
+    { _confTam   :: Float
+    , _confVel   :: Float
+    , _confVid   :: Float
+    , _confFuer  :: Float
+    , _confDano  :: Float
+    , _confTipo  :: GType.ComportamientoParticula
     }
 
-crearBoxParticula :: Int -> SDL.V2 Float -> Float -> GType.Box
-crearBoxParticula parId pos angulo
-    | parId == idParBala   = mkBox tamanoBala
-    | parId == idParChispa = mkBox tamanoChispa
-    | parId == idParFuego  = mkBox 20.0 
-    | otherwise            = error "crearBoxParticula: id de partícula desconocido"
-  where
-    mkBox tam = GType.Box
+obtenerConfiguracion :: Int -> ParticulaConfig
+obtenerConfiguracion pid
+    | pid == idParBala = ParticulaConfig 
+        { _confTam   = 8.0
+        , _confVel   = 1000.0
+        , _confVid   = 2.0
+        , _confFuer  = 20.0
+        , _confDano  = 20.0
+        , _confTipo  = GType.MovimientoLineal
+        }
+    | pid == idParFuego = ParticulaConfig 
+        { _confTam   = 20.0
+        , _confVel   = 400.0
+        , _confVid   = 0.6
+        , _confFuer  = 15.0
+        , _confDano  = 20.0
+        , _confTipo  = GType.MovimientoGradualDown
+        }
+    | pid == idParChispa = ParticulaConfig 
+        { _confTam   = 6.0
+        , _confVel   = 300.0
+        , _confVid   = 0.3
+        , _confFuer  = 0.0
+        , _confDano  = 15.0
+        , _confTipo  = GType.MovimientoLineal
+        }
+    | pid == idParHumo = ParticulaConfig 
+        { _confTam   = 15.0
+        , _confVel   = 100.0
+        , _confVid   = 1.5
+        , _confFuer  = 0.0
+        , _confDano  = 0.0
+        , _confTipo  = GType.MovimientoGradualDown
+        }
+    | otherwise = error $ "Configuración no definida para ID: " ++ show pid
+
+crearEntidadParticula :: Int -> SDL.V2 Float -> Float -> GType.Entidad
+crearEntidadParticula parId pos angulo = 
+    let config = obtenerConfiguracion parId
+    in GType.Entidad
+        { GType._entBox = crearBoxDesdeConfig config pos angulo
+        , GType._entMov = crearMovDesdeConfig config
+        , GType._entVid = crearVidaDesdeConfig config
+        , GType._entEmp = crearEmpujeDesdeConfig config
+        , GType._entBuf = []
+        , GType._entInv = []
+        , GType._entHnd = GType.itemVacio
+        }
+
+crearParticula :: Int -> SDL.V2 Float -> Float -> Float -> Float -> Float -> GType.Particula
+crearParticula pId pos angulo tamano velocidad vida =
+    let 
+        config  = obtenerConfiguracion pId
+        entidad = crearEntidadDinamica config pos angulo tamano velocidad vida
+    in
+        GType.Particula 
+            { GType._parEnt = entidad
+            , GType._parTip = _confTipo config 
+            , GType._parId  = pId
+            , GType._parDmg = _confDano config
+            }
+
+crearBoxDesdeConfig :: ParticulaConfig -> SDL.V2 Float -> Float -> GType.Box
+crearBoxDesdeConfig config pos angulo =
+    let tam = _confTam config
+    in GType.Box
         { GType._boxPos = pos
         , GType._boxTam = SDL.V2 tam tam
         , GType._boxAng = angulo
         , GType._boxRad = tam / 2
         }
 
-crearMovParticula :: Int -> GType.Movimiento
-crearMovParticula parId
-    | parId == idParBala   = mkMov velocidadBala
-    | parId == idParChispa = mkMov velocidadChispa
-    | parId == idParFuego  = mkMov 400.0 
-    | otherwise            = error "crearMovParticula: id de partícula desconocido"
-  where
-    mkMov vel = GType.Movimiento
-        { GType._movVel = vel
-        , GType._movRot = 0
-        , GType._movFac = 1.0
-        , GType._movAct = 0.0
-        }
+crearMovDesdeConfig :: ParticulaConfig -> GType.Movimiento
+crearMovDesdeConfig config = GType.Movimiento
+    { GType._movVel = _confVel config
+    , GType._movRot = 0
+    , GType._movFac = 1.0
+    , GType._movAct = 0.0
+    }
 
-crearVidaParticula :: Int -> GType.Vida
-crearVidaParticula parId
-    | parId == idParBala   = mkVida vidaBala
-    | parId == idParChispa = mkVida vidaChispa
-    | parId == idParFuego  = mkVida 0.6
-    | otherwise            = error "crearVidaParticula: id de partícula desconocido"
-  where
-    mkVida v = GType.Vida
-        { GType._vidAct = v
-        , GType._vidMax = v
-        , GType._vidMrt = 0
-        }
+crearVidaDesdeConfig :: ParticulaConfig -> GType.Vida
+crearVidaDesdeConfig config = 
+    let v = _confVid config
+    in GType.Vida { GType._vidAct = v, GType._vidMax = v, GType._vidMrt = 0 }
 
-crearEmpujeParticula :: Int -> GType.Empuje
-crearEmpujeParticula parId
-    | parId == idParBala   = baseEmp
-    | parId == idParChispa = baseEmp
-    | parId == idParFuego  = baseEmp
-    | otherwise            = error "crearEmpujeParticula: id de partícula desconocido"
-  where
-    baseEmp = GType.Empuje
-        { GType._empVec = SDL.V2 0 0
-        , GType._empFrz = 0
-        }
+crearEmpujeDesdeConfig :: ParticulaConfig -> GType.Empuje
+crearEmpujeDesdeConfig config = GType.Empuje
+    { GType._empVec = SDL.V2 0 0
+    , GType._empFrz = _confFuer config
+    }
 
-crearEntidadDinamica :: Int -> SDL.V2 Float -> Float -> Float -> Float -> Float -> GType.Entidad
-crearEntidadDinamica parId pos angulo tamano velocidad vida = GType.Entidad
+crearEntidadDinamica :: ParticulaConfig -> SDL.V2 Float -> Float -> Float -> Float -> Float -> GType.Entidad
+crearEntidadDinamica config pos angulo tamano velocidad vida = GType.Entidad
     { GType._entBox = mkBoxDinamica pos angulo tamano
     , GType._entMov = mkMovDinamica velocidad
     , GType._entVid = mkVidaDinamica vida
-    , GType._entEmp = crearEmpujeParticula parId
+    , GType._entEmp = crearEmpujeDesdeConfig config -- Usa la fuerza del tipo
     , GType._entBuf = []
     , GType._entInv = []
     , GType._entHnd = GType.itemVacio
     }
   where
     mkBoxDinamica p a t = GType.Box
-        { GType._boxPos = p
-        , GType._boxTam = SDL.V2 t t
-        , GType._boxAng = a
-        , GType._boxRad = t / 2
-        }
+        { GType._boxPos = p, GType._boxTam = SDL.V2 t t, GType._boxAng = a, GType._boxRad = t / 2 }
     mkMovDinamica v = GType.Movimiento
-        { GType._movVel = v
-        , GType._movRot = 0
-        , GType._movFac = 1.0
-        , GType._movAct = 0.0
-        }
+        { GType._movVel = v, GType._movRot = 0, GType._movFac = 1.0, GType._movAct = 0.0 }
     mkVidaDinamica v = GType.Vida
-        { GType._vidAct = v
-        , GType._vidMax = v
-        , GType._vidMrt = 0
-        }
+        { GType._vidAct = v, GType._vidMax = v, GType._vidMrt = 0 }
 
-
-generarExplosion :: SDL.V2 Float -> Int -> Int -> OType.ComportamientoParticula -> (Float, Float) -> (Float, Float) -> (Float, Float) -> SR.StdGen -> ([OType.Particula], SR.StdGen)
-generarExplosion pos n parId tipoMov rVel rVid rTam genInicial = 
+generarExplosion :: SDL.V2 Float -> Int -> Int -> (Float, Float) -> (Float, Float) -> (Float, Float) -> SR.StdGen -> ([GType.Particula], SR.StdGen)
+generarExplosion pos n parId rVel rVid rTam genInicial = 
     go n genInicial []
   where
     go 0 gen acc = (acc, gen)
@@ -137,12 +144,10 @@ generarExplosion pos n parId tipoMov rVel rVid rTam genInicial =
             (speed, g2) = SR.randomR rVel g1
             (vida,  g3) = SR.randomR rVid g2
             (tam,   g4) = SR.randomR rTam g3
-            ent = crearEntidadDinamica parId pos angle tam speed vida
-            part = OType.Particula { OType._parEnt = ent, OType._parTip = tipoMov, OType._parId = parId}
-        in
-            go (k - 1) g4 (part : acc)
+            part = crearParticula parId pos angle tam speed vida
+        in go (k - 1) g4 (part : acc)
 
-generarAbanicoFuego :: SDL.V2 Float -> Float -> Int -> SR.StdGen -> ([OType.Particula], SR.StdGen)
+generarAbanicoFuego :: SDL.V2 Float -> Float -> Int -> SR.StdGen -> ([GType.Particula], SR.StdGen)
 generarAbanicoFuego posOrigen anguloBase n genInicial =
     go n genInicial []
   where
@@ -154,25 +159,70 @@ generarAbanicoFuego posOrigen anguloBase n genInicial =
     go 0 gen acc = (acc, gen)
     go k gen acc =
         let
-            -- Variación aleatoria del ángulo dentro del spread
             (angleVar, g1) = SR.randomR (-spreadAngle/2, spreadAngle/2) gen
             finalAngle = anguloBase + angleVar
-            
             (speed, g2) = SR.randomR rVel g1
             (vida,  g3) = SR.randomR rVid g2
             (tam,   g4) = SR.randomR rTam g3
-            
-            -- Usamos idParFuego y MovimientoGradualDown para que frenen rápido
-            ent = crearEntidadDinamica idParFuego posOrigen finalAngle tam speed vida
-            part = OType.Particula { OType._parEnt = ent, OType._parTip = OType.MovimientoGradualDown, OType._parId = idParFuego}
-        in
-            go (k - 1) g4 (part : acc)
+            part = crearParticula idParFuego posOrigen finalAngle tam speed vida
+        in go (k - 1) g4 (part : acc)
 
-dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> OType.Particula -> IO ()
+generarProyectil :: Int -> SDL.V2 Float -> Float -> [GType.Particula]
+generarProyectil pId posBoquilla angulo =
+    let 
+        config      = obtenerConfiguracion pId
+        tamano      = _confTam config
+        dano        = _confDano config
+        tipoMov     = _confTipo config
+        posCentrada = posBoquilla - (SDL.V2 (tamano/2) (tamano/2))
+        entidad     = crearEntidadParticula pId posCentrada angulo
+    in
+        [ GType.Particula 
+            { GType._parEnt = entidad
+            , GType._parTip = tipoMov
+            , GType._parId  = pId
+            , GType._parDmg = dano
+            }
+        ]
+
+actualizarParticulas :: Float -> [GType.Particula] -> [GType.Particula]
+actualizarParticulas dt particulas =
+    let 
+        particulasProcesadas = map (procesarParticula dt) particulas
+        particulasVivas      = filter (\p -> (p LMi.^. GType.parEnt . GType.entVid . GType.vidAct) > 0) particulasProcesadas
+    in particulasVivas
+
+procesarParticula :: Float -> GType.Particula -> GType.Particula
+procesarParticula dt particulaInicial =
+    let
+        posActual           = particulaInicial LMi.^. GType.parEnt . GType.entBox . GType.boxPos
+        angDeg              = particulaInicial LMi.^. GType.parEnt . GType.entBox . GType.boxAng
+        velocidad           = particulaInicial LMi.^. GType.parEnt . GType.entMov . GType.movVel
+        angRad              = angDeg * (pi / 180.0)
+        vectorDir           = SDL.V2 (cos angRad) (sin angRad)
+        desplazamiento      = vectorDir LV.^* (velocidad * dt)
+        nuevaPosicion       = posActual + desplazamiento
+        particulaMovida     = particulaInicial LMi.& GType.parEnt . GType.entBox . GType.boxPos LMi..~ nuevaPosicion
+        vidaActual          = particulaMovida LMi.^. GType.parEnt . GType.entVid . GType.vidAct
+        nuevaVida           = vidaActual - dt
+        particulaEnvejecida = particulaMovida LMi.& GType.parEnt . GType.entVid . GType.vidAct LMi..~ nuevaVida
+        tipoParticula       = particulaEnvejecida LMi.^. GType.parTip
+        particulaFinal      = aplicarComportamiento tipoParticula particulaEnvejecida
+    in particulaFinal
+
+aplicarComportamiento :: GType.ComportamientoParticula -> GType.Particula -> GType.Particula
+aplicarComportamiento tipo p =
+    case tipo of
+        GType.MovimientoLineal -> p
+        GType.MovimientoGradualDown -> p
+                LMi.& GType.parEnt . GType.entMov . GType.movVel LMi.%~ (* 0.90)
+                LMi.& GType.parEnt . GType.entBox . GType.boxTam LMi.%~ (LV.^* 0.95)
+
+dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> GType.Particula -> IO ()
 dibujar renderer texture camPos zoom particula = do
-    let pos  = particula LMi.^. OType.parEnt . GType.entBox . GType.boxPos
-        tam  = particula LMi.^. OType.parEnt . GType.entBox . GType.boxTam
-        pId  = particula LMi.^. OType.parId
+    let pos  = particula LMi.^. GType.parEnt . GType.entBox . GType.boxPos
+        tam  = particula LMi.^. GType.parEnt . GType.entBox . GType.boxTam
+        pId  = particula LMi.^. GType.parId
 
         color =
             case pId of

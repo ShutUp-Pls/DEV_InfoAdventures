@@ -6,17 +6,30 @@ import qualified Lens.Micro.TH  as LMT
 -- Módulos propios
 import qualified Globals.Types      as GType
 import qualified Personajes.Types   as PType
-import qualified Objetos.Types      as OType
+
+data SpawnType 
+    = SpawnEnemigo PType.Zombie
+    | SpawnItem GType.Item
+    deriving (Show, Eq)
+
+data Spawner = Spawner
+    { _spaBox        :: GType.Box
+    , _areaSpawn     :: Float
+    , _tipoSpawn     :: SpawnType
+    , _rangoTiempo   :: (Float, Float)
+    , _tiempoActual  :: Float
+    } deriving (Show, Eq)
+LMT.makeLenses ''Spawner
 
 data GameState = GameState
-    { _camara        ::   OType.Camara
+    { _camara        ::   GType.Camara
     , _jugador       ::   PType.Jugador
     , _rng           ::   SR.StdGen
-    , _enemigos      :: [ PType.Zombie   ]
-    , _items         :: [ GType.Item     ]
-    , _particulas    :: [ OType.Particula]
-    , _mapa          :: [ GType.Box      ]
-    , _spawners      :: [ OType.Spawner  ]
+    , _enemigos      :: [ PType.Zombie    ]
+    , _items         :: [ GType.Item      ]
+    , _particulas    :: [ GType.Particula ]
+    , _mapa          :: [ GType.Box       ]
+    , _spawners      :: [ Spawner         ]
     , _tiempoJuego   :: Float
     , _tiempoTotal   :: Float
     , _cooldownUI   :: Float

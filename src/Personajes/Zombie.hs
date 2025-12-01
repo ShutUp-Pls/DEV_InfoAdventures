@@ -2,18 +2,17 @@
 module Personajes.Zombie where
 -- Módulos del sistema
 import qualified SDL
-import qualified Control.Monad.State as CMS
-import qualified Linear.Vector       as LV
-import qualified Lens.Micro          as LMi
-import qualified Data.Word           as DW
+import qualified Lens.Micro         as LMi
+import qualified Linear.Metric      as LMe
+import qualified Data.Word          as DW
 -- Módulos propios
 import qualified Personajes.Types   as PType
-import qualified Objetos.Types      as OType
 import qualified Globals.Types      as GType
-import qualified Personajes.IA      as IA
-import qualified Objetos.Particula  as OPart
+
 import qualified Graficos.Dibujado  as GD
-import qualified Fisica.Colisiones  as FC
+
+import qualified Fisica.MovEntidad  as FMen
+import qualified Fisica.Colisiones  as FCol
 
 idZmbBasico, idZmbCorredor, idZmbTanque :: Int
 idZmbBasico   = 3000
@@ -105,109 +104,34 @@ crearZombie zId pos =
         , PType._zmdId     = zId
         }
 
+moverZombies :: PType.Jugador -> [PType.Zombie] -> [GType.Box] -> [PType.Zombie]
+moverZombies jug enemigos mapa =
+    let zombiesMovidos = map (\enemy -> moverZombie enemy mapa jug) enemigos
+    in resolverColisionesEntreZombies zombiesMovidos
+
 moverZombie :: PType.Zombie -> [GType.Box] -> PType.Jugador -> PType.Zombie
 moverZombie zombieActual mapObstaculos player = 
     let 
-        entidadInicial = zombieActual   LMi.^. PType.zmbEnt
-        rangoVis       = zombieActual   LMi.^. PType.zmbRadVis
-        posZombie      = entidadInicial LMi.^. GType.entBox . GType.boxPos
-        posJugador     = player         LMi.^. PType.jugEnt . GType.entBox . GType.boxPos
-
-        detectado = IA.enRangoDeVision posZombie rangoVis posJugador
-        entidadFinal = CMS.execState (IA.rutinaPersecucion posJugador detectado mapObstaculos) entidadInicial
+        entidadInicial  = zombieActual   LMi.^. PType.zmbEnt
+        rangoVis        = zombieActual   LMi.^. PType.zmbRadVis
+        posZombie       = entidadInicial LMi.^. GType.entBox . GType.boxPos
+        posJugador      = player         LMi.^. PType.jugEnt . GType.entBox . GType.boxPos
+        distancia       = LMe.distance posZombie posJugador
+        detectado       = distancia < rangoVis
+        entidadFinal    = FMen.rutinaPersecucion posJugador detectado mapObstaculos entidadInicial
     in
         zombieActual 
             LMi.& PType.zmbEnt LMi..~ entidadFinal
             LMi.& PType.zmbVerJug LMi..~ detectado
 
-updateEnemies :: PType.Jugador -> [PType.Zombie] -> [GType.Box] -> [PType.Zombie]
-updateEnemies jug enemigos mapa =
-    let zombiesMovidos = map (\enemy -> moverZombie enemy mapa jug) enemigos
-    in resolverColisionesEntreZombies zombiesMovidos
-
 limpiarZombiesMuertos :: [PType.Zombie] -> [PType.Zombie]
 limpiarZombiesMuertos = filter (\z -> (z LMi.^. PType.zmbEnt . GType.entVid . GType.vidAct) > 0)
-
-gestionarCombate :: [OType.Particula] -> [PType.Zombie] -> ([OType.Particula], [PType.Zombie])
-gestionarCombate balas zombies =
-    let 
-        (balasRestantes, zombiesDañados) = resolverImpactos balas zombies
-        zombiesVivos = limpiarZombiesMuertos zombiesDañados
-    in 
-        (balasRestantes, zombiesVivos)
 
 resolverColisionesEntreZombies :: [PType.Zombie] -> [PType.Zombie]
 resolverColisionesEntreZombies zombies =
     let entidadesGenericas = map (LMi.^. PType.zmbEnt) zombies
-    in map (\z -> z LMi.& PType.zmbEnt LMi.%~ (FC.separarEntidades (z LMi.& PType._zmbTeamRd) entidadesGenericas)) zombies
+    in map (\z -> z LMi.& PType.zmbEnt LMi.%~ (FCol.separarEntidades (z LMi.& PType._zmbTeamRd) entidadesGenericas)) zombies
 
-dañarZombieEnIndice :: Int -> Float -> [PType.Zombie] -> [PType.Zombie]
-dañarZombieEnIndice idx dano zombies =
-    take idx zombies ++ 
-    [zombies !! idx LMi.& PType.zmbEnt . GType.entVid . GType.vidAct LMi.%~ (\v -> v - dano)] ++ 
-    drop (idx + 1) zombies
-
-resolverImpactos :: [OType.Particula] -> [PType.Zombie] -> ([OType.Particula], [PType.Zombie])
-resolverImpactos balas enemigos = 
-    foldl procesarBala ([], enemigos) balas
-  where
-    procesarBala (balasVivas, zombiesActuales) bala =
-        let 
-            entBala = bala LMi.^. OType.parEnt
-            boxBala = entBala LMi.^. GType.entBox
-            angBala = entBala LMi.^. GType.entBox . GType.boxAng
-            parID = determinarIdParticula entBala
-            
-            impacto = checkImpactoUnico boxBala zombiesActuales
-        in case impacto of
-            Nothing -> (bala : balasVivas, zombiesActuales) 
-            Just (zombieIndex, _) -> 
-                let zombiesDañados = aplicarImpactoZombie 
-                                        zombieIndex 
-                                        parID
-                                        angBala 
-                                        zombiesActuales
-                in (balasVivas, zombiesDañados)
-
-determinarIdParticula :: GType.Entidad -> Int
-determinarIdParticula ent =
-    let vel = ent LMi.^. GType.entMov . GType.movVel
-        vidaMax = ent LMi.^. GType.entVid . GType.vidMax
-    in if vel == OPart.velocidadBala && vidaMax == OPart.vidaBala 
-       then OPart.idParBala
-       else OPart.idParFuego
-
-aplicarImpactoZombie :: Int -> Int -> Float -> [PType.Zombie] -> [PType.Zombie]
-aplicarImpactoZombie idxZombie parId anguloBala zombies =
-    let 
-        (dano, fuerzaEmpuje) = case parId of
-            _ | parId == OPart.idParBala -> (25.0, OPart.fuerzaBala)
-            _ | parId == OPart.idParFuego -> (5.0, OPart.fuerzaFuego)
-            _ -> (0.0, 0.0)
-
-        zombieTarget = zombies !! idxZombie
-        angleRad = anguloBala * (pi / 180.0)
-        dirEmpuje = SDL.V2 (cos angleRad) (sin angleRad)
-        vecFuerza = dirEmpuje LV.^* fuerzaEmpuje
-
-        zombieModificado = zombieTarget
-            LMi.& PType.zmbEnt . GType.entVid . GType.vidAct LMi.%~ (\v -> v - dano)
-            LMi.& PType.zmbEnt . GType.entEmp . GType.empVec LMi.%~ (+ vecFuerza)
-            LMi.& PType.zmbVerJug LMi..~ True 
-
-    in 
-        take idxZombie zombies ++ [zombieModificado] ++ drop (idxZombie + 1) zombies
-
-checkImpactoUnico :: GType.Box -> [PType.Zombie] -> Maybe (Int, PType.Zombie)
-checkImpactoUnico boxBala zombies = 
-    go 0 zombies
-  where
-    go _ [] = Nothing
-    go idx (z:zs) =
-        let boxZ = z LMi.^. PType.zmbEnt . GType.entBox
-        in case FC.mtvBoxes boxBala boxZ of
-            Just _  -> Just (idx, z)
-            Nothing -> go (idx + 1) zs
 
 colorZombie :: Int -> SDL.V4 DW.Word8
 colorZombie zId

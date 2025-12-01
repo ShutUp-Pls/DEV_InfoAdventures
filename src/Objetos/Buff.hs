@@ -2,13 +2,13 @@
 module Objetos.Buff where
 -- Modulos del sistema
 import qualified SDL
-import qualified Data.List  as DL
-import qualified Data.Text  as DT
-import qualified Lens.Micro as LMi
+import qualified Data.List          as DL
+import qualified Data.Text          as DT
+import qualified Lens.Micro         as LMi
 -- Modulos propios
-import qualified Globals.Types    as GType
-import qualified Personajes.Types as PType
-import qualified Graficos.Dibujado as GD
+import qualified Globals.Types      as GType
+import qualified Personajes.Types   as PType
+import qualified Graficos.Dibujado  as GD
 
 idBuffVelA :: Int
 idBuffVelA = 1

@@ -8,7 +8,6 @@ import qualified Lens.Micro as LMi
 import qualified Types
 import qualified Personajes.Types   as PType
 import qualified Globals.Types      as GType
-import qualified Objetos.Types      as OType
 
 import qualified Graficos.Dibujado  as GD
 import qualified Graficos.HUD       as GHUD
@@ -38,9 +37,9 @@ renderGame renderer font blockTexture skinTexture input gs = do
     let vivo        = vidAct > 0 && tiempo > 0
 
     let cam      = gs  LMi.^. Types.camara
-    let zoom     = cam LMi.^. OType.zoomLevel
-    let camPos   = cam LMi.^. OType.posCamara
-    let dzSize   = cam LMi.^. OType.deadzoneSize
+    let zoom     = cam LMi.^. GType.zoomLevel
+    let camPos   = cam LMi.^. GType.posCamara
+    let dzSize   = cam LMi.^. GType.deadzoneSize
 
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 120 120 120 255
     SDL.clear renderer

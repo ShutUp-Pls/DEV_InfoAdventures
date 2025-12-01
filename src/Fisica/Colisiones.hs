@@ -4,13 +4,9 @@ import qualified SDL
 import qualified Linear.Metric          as LMe
 import qualified Linear.Vector          as LV
 import qualified Lens.Micro             as LMi
-import qualified Control.Monad.State    as CMS
 -- Módulos propios
 import qualified Globals.Types          as GType
 import qualified Fisica.SAT             as FS  
-
-anguloNulo :: Float
-anguloNulo = 0.0
 
 calcularRadioAprox :: SDL.V2 Float -> Float
 calcularRadioAprox (SDL.V2 w h) = (w + h) / 2
@@ -25,35 +21,6 @@ mtvBoxes boxA boxB =
         tamB = boxB LMi.^. GType.boxTam
         angB = boxB LMi.^. GType.boxAng
     in FS.satCollision posA tamA angA posB tamB angB
-
-interaccionFisicaEntreEntidades :: Float -> GType.Entidad -> CMS.State GType.Entidad GType.Entidad
-interaccionFisicaEntreEntidades danoRecibido entidadInput = do
-    entidadEstado <- CMS.get
-    let boxJ = entidadEstado LMi.^. GType.entBox
-        boxE = entidadInput  LMi.^. GType.entBox
-    case mtvBoxes boxJ boxE of
-        Nothing -> pure entidadInput
-        Just mtv -> do
-            entidadInputModificada <- resolverEmpuje mtv entidadInput
-            resolverDano danoRecibido
-            pure entidadInputModificada
-
-resolverEmpuje :: SDL.V2 Float -> GType.Entidad -> CMS.State GType.Entidad GType.Entidad
-resolverEmpuje mtv entidadInput = do
-    entidadEstado <- CMS.get
-    
-    let dir = LMe.normalize mtv
-        fuerzaEmpujeEstado = entidadEstado LMi.^. GType.entEmp . GType.empFrz
-        fuerzaEmpujeInput  = entidadInput  LMi.^. GType.entEmp . GType.empFrz
-
-        nuevoVelEstado = dir LV.^* fuerzaEmpujeInput
-        nuevoVelInput  = (dir LV.^* (-1)) LV.^* fuerzaEmpujeEstado
-
-    CMS.modify $ LMi.set (GType.entEmp . GType.empVec) nuevoVelEstado
-    pure $ entidadInput LMi.& GType.entEmp . GType.empVec LMi..~ nuevoVelInput
-
-resolverDano :: Float -> CMS.State GType.Entidad ()
-resolverDano cantidad = CMS.modify $ LMi.over (GType.entVid . GType.vidAct) (\v -> v - cantidad)
 
 separarEntidades :: Float -> [GType.Entidad] -> GType.Entidad -> GType.Entidad
 separarEntidades rechazo obstaculos entidad =

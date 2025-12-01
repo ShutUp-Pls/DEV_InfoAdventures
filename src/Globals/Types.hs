@@ -99,3 +99,24 @@ itemVacio = Item
     , _iteAct = False
     , _iteTipo = NoItem
     }
+
+data Camara = Camara
+    { _posCamara    :: SDL.V2 Float
+    , _deadzoneSize :: SDL.V2 Float
+    , _zoomLevel    :: Float
+    , _zoomBase     :: Float
+    } deriving (Show, Eq)
+LMT.makeLenses ''Camara
+
+data ComportamientoParticula 
+    = MovimientoLineal
+    | MovimientoGradualDown
+    deriving (Show, Eq)
+
+data Particula = Particula
+    { _parId    :: Int
+    , _parEnt   :: Entidad
+    , _parTip   :: ComportamientoParticula
+    , _parDmg   :: Float
+    } deriving (Show, Eq)
+LMT.makeLenses ''Particula

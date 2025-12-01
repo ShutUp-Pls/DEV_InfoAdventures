@@ -19,14 +19,14 @@ executable DEV-InfoAdventures
     other-modules:
         Fisica.Angulos
         Fisica.Colisiones
+        Fisica.Combates
         Fisica.Disparo
         Fisica.MovEntidad
-        Fisica.MovParticulas
         Fisica.SAT
         Fisica.Vectores
 
-        Globals.Types
         Globals.Camara
+        Globals.Types
 
         Graficos.Dibujado
         Graficos.HUD
@@ -38,18 +38,15 @@ executable DEV-InfoAdventures
         Objetos.Buff
         Objetos.Particula
         Objetos.Spawner
-        Objetos.Types
 
-        Personajes.Control
-        Personajes.IA
         Personajes.Jugador
         Personajes.Types
         Personajes.Zombie
 
-        Types
         Inicio
         Juego
         Launcher
+        Types
     build-depends:
         base ^>=4.17.2.0
         ,sdl2

@@ -150,7 +150,7 @@
     * Se introduce el uso de 'Lens' completo para usar 'makePrism' en el patternMatch de Data Types.
     * Se cambia de `ItemsBuff.hs` a `Buff.hs` y se equivale la logica de los items.
 
-## 1.0.0.0 -- 2025-11-29
+## 1.0.0.0 -- 2025-11-30
   * Otra gran refactorización en fisicas, particulas y demases para asegurar un sistema de combate escalable.
   * Se añade el tiempo como mecanica principal y objetivo del juego, surival contra reloj.
   * Se añade un mapa mucho más grande.
@@ -158,3 +158,15 @@
   * Se añaden mas armas y más enemigos.
 
     >*Nota*: Se puede decir que se puede jugar, el gameplay es muy pobre, pero al menos ya no es un intento de juego, ahora si tiene un objetivo y variedad de formas de llevarlo a cabo. Se hicieron muchas cosas, entré en flujo y me olvidé de actualizar el changelog.
+
+## 1.0.1.0 -- 2025-11-01
+ * Refactorización de codigo, se eliminan varías monadeState que no tenían ninguna razón de ser.
+ * Se elimina `Objetos.Types` y se delega todo a una relación entre `Personajes.Types`, `Globals.Types` y `Types`
+ * Se utiliza una logica de 'pipeline' en los modulos de fisica para ayudar a la legibilidad.
+ * Se implementa la defición in situ de particulas por ID para manejar de forma localizada sus datos.
+ * Logica de 'procesaBala' totalmente diseccionada.
+ * Ya no son los personajes los que gestionan sus combates, ahora está todo en `Fisica.Combates`.
+ * Se repatría la idea de movimientos particulares en sus modulos y los generales en `Fisica.MovEntidad`, ya que por ahora todo lo que se mueve es una entidad.
+ * Se comienza a esribir el README.md con formato de informe.
+
+ >*Nota*: Escribiendo el readme me di cuenta que he estado no aprovechando del todo las `Fisica.Combates`, por lo que habrá una siguiente refactorización que utilizaré para ejemplificar en el informa

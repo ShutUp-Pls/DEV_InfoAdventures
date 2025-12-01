@@ -2,14 +2,14 @@ module Globals.Camara where
 
 -- Módulos del sistema
 import qualified SDL
-import qualified Data.Word  as DW
-import qualified Lens.Micro as LMi
-import qualified Linear.Metric as LMe -- Necesario para calcular distancias
+import qualified Data.Word          as DW
+import qualified Lens.Micro         as LMi
+import qualified Linear.Metric      as LMe
 -- Módulos propios
 import qualified Types
 import qualified Personajes.Types   as PType
-import qualified Objetos.Types      as OType
 import qualified Globals.Types      as GType
+
 import qualified Graficos.Dibujado  as GD
 
 -- Cuánto cambia el zoom por frame al pulsar +/-
@@ -48,14 +48,14 @@ colorDeadzone = SDL.V4 255 0 0 255
 grosorLineaDeadzone :: Float
 grosorLineaDeadzone = 2.0
 
-actualizarCamara :: Types.Input -> PType.Jugador -> [PType.Zombie] -> OType.Camara -> OType.Camara
+actualizarCamara :: Types.Input -> PType.Jugador -> [PType.Zombie] -> GType.Camara -> GType.Camara
 actualizarCamara input target enemigos camActual = camActual
-        LMi.& OType.posCamara    LMi..~ finalCamPos
-        LMi.& OType.deadzoneSize LMi..~ finalDZ 
-        LMi.& OType.zoomLevel    LMi..~ finalZoom
-        LMi.& OType.zoomBase     LMi..~ newBase
+        LMi.& GType.posCamara    LMi..~ finalCamPos
+        LMi.& GType.deadzoneSize LMi..~ finalDZ 
+        LMi.& GType.zoomLevel    LMi..~ finalZoom
+        LMi.& GType.zoomBase     LMi..~ newBase
   where
-    currentBase = camActual LMi.^. OType.zoomBase
+    currentBase = camActual LMi.^. GType.zoomBase
     newBase 
         | input LMi.^. Types.zoomIn  = min zoomMaxUsuario (currentBase + velZoomManual)
         | input LMi.^. Types.zoomOut = max zoomMinimo (currentBase - velZoomManual)
@@ -76,14 +76,14 @@ actualizarCamara input target enemigos camActual = camActual
 
     targetZoom = min zoomMaxAbsoluto (newBase + (zoomBoostPeligro * maxAmenaza))
 
-    currentZoom = camActual LMi.^. OType.zoomLevel
+    currentZoom = camActual LMi.^. GType.zoomLevel
     diffZoom = targetZoom - currentZoom
     finalZoom 
         | abs diffZoom < umbralEstabilidad = targetZoom
         | otherwise                        = currentZoom + (diffZoom * factorSuavizado)
 
-    currentDZ = camActual LMi.^. OType.deadzoneSize
-    cPos      = camActual LMi.^. OType.posCamara
+    currentDZ = camActual LMi.^. GType.deadzoneSize
+    cPos      = camActual LMi.^. GType.posCamara
     pSize     = target LMi.^. PType.jugEnt . GType.entBox . GType.boxTam
     (SDL.V2 diffX diffY) = pPos - cPos
     
