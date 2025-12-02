@@ -191,3 +191,8 @@
   * Se corrige la fecha anterior del Changelog para correlación con la realidad de los 'commits'.
 
  >*Nota*: ¡Por fin!
+
+ ## 2.0.0.1 -- 2025-11-02
+  * Rebalanceo: Se aumenta el rating de aparición de items de tiempo.
+  * Rebalanceo: Se aumenta el tiempo inicial al comenzar el juego.
+  * Bugfix: El contador no se detenía al morir el jugador.

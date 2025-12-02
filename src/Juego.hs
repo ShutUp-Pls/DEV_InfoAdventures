@@ -53,7 +53,7 @@ actualizarSistemasGlobalesM = do
     tiempo <- LMi.use Types.tiempoJuego
 
     let relojActivo = vivo && case fase of
-            Types.FaseFin       -> True
+            Types.FaseFin       -> False 
             Types.FaseSobrevive -> True
             Types.FaseNula      -> tiempo > 0
             _                   -> False

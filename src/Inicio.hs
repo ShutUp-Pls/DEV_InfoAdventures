@@ -105,7 +105,7 @@ spawnerTiempoA :: Types.Spawner
 spawnerTiempoA = Types.Spawner
     { Types._areaSpawn    = 4800.0
     , Types._tipoSpawn    = Types.SpawnItem (OBuff.crearItemBuff OBuff.idBuffTiempoA (SDL.V2 0 0))
-    , Types._rangoTiempo  = (20.0, 40.0)
+    , Types._rangoTiempo  = (3.0, 6.0)
     , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 4700 450) (SDL.V2 32 32) 0.0 0.0
     }
@@ -114,7 +114,7 @@ spawnerTiempoB :: Types.Spawner
 spawnerTiempoB = Types.Spawner
     { Types._areaSpawn    = 4800.0
     , Types._tipoSpawn    = Types.SpawnItem (OBuff.crearItemBuff OBuff.idBuffTiempoB (SDL.V2 0 0))
-    , Types._rangoTiempo  = (40.0, 80.0)
+    , Types._rangoTiempo  = (15.0, 25.0)
     , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 4700 450) (SDL.V2 32 32) 0.0 0.0
     }
@@ -123,7 +123,7 @@ spawnerTiempoC :: Types.Spawner
 spawnerTiempoC = Types.Spawner
     { Types._areaSpawn    = 4800.0
     , Types._tipoSpawn    = Types.SpawnItem (OBuff.crearItemBuff OBuff.idBuffTiempoC (SDL.V2 0 0))
-    , Types._rangoTiempo  = (60.0, 120.0)
+    , Types._rangoTiempo  = (20.0, 40.0)
     , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 4700 450) (SDL.V2 32 32) 0.0 0.0
     }
@@ -237,7 +237,7 @@ estadoInicial isTutorial = do
                        else PJ.equiparItem glockInicial jugadorBase
 
     let itemsJuego = if isTutorial then [] else itemsIniciales
-    let tiempoInit = if isTutorial then 60.0 else 60.0
+    let tiempoInit = if isTutorial then 90.0 else 90.0
     let faseInit   = if isTutorial then Types.FaseIntro else Types.FaseNula
 
     return $ Types.GameState
