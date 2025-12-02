@@ -205,3 +205,7 @@
 
  ## 2.0.0.5 -- 2025-11-02
   * Bugfix: El contador no comenzaba una vez terminado el tutorial. Pensé que lo había arreglado en la versión `V-2.0.0.2`
+  
+ ## 2.0.0.6 -- 2025-11-02
+  * Bugfix: El contador no comenzaba una vez terminado el tutorial al morir no indicaba el tiempo de supervivencia.
+  * Rebalanceo: Se añade más fuerza de empuje al jugador.

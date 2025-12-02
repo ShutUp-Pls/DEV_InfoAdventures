@@ -59,10 +59,11 @@ actualizarSistemasGlobalesM = do
             _                   -> False
 
     let relojActivo = vivo && (tiempo > 0) && esFaseActiva
+
+    CMo.when relojActivo $ Types.tiempoJuego LMi.%= (\t -> max 0 (t - dt))
+    CMo.when relojActivo $ Types.tiempoTotal LMi.+= dt
     
     Types.cooldownUI  LMi.%= (\t -> max 0 (t - dt))
-
-    CMo.when relojActivo $ Types.tiempoTotal LMi.+= dt
     
     rng      <- LMi.use Types.rng
     spawners <- LMi.use Types.spawners

@@ -43,7 +43,7 @@ crearStatsVida = GType.Vida
 crearEmpujeNeutro :: GType.Empuje
 crearEmpujeNeutro = GType.Empuje 
     { GType._empVec = SDL.V2 0 0
-    , GType._empFrz = 10.0
+    , GType._empFrz = 20.0
     }
 
 crearEntidadJugador :: SDL.V2 Float -> GType.Entidad
