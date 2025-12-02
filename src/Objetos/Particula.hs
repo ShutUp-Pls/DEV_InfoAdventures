@@ -32,28 +32,31 @@ data ParticulaConfig = ParticulaConfig
 
 obtenerConfiguracion :: Int -> ParticulaConfig
 obtenerConfiguracion pid
+    -- 5. Plasma: Daño suficiente para Tanque en 2 tiros (250 / 2 = 125)
     | pid == idParPlasma = ParticulaConfig 
         { _confTam   = 12.0
         , _confVel   = 850.0
         , _confVid   = 1.5
         , _confFuer  = 30.0
-        , _confDano  = 45.0
+        , _confDano  = 125.0
         , _confTipo  = GType.MovimientoLineal
         }
+    -- 4. Cohete: Daño para 2 Tanques (250 * 2 = 500)
     | pid == idParCohete = ParticulaConfig 
         { _confTam   = 18.0
         , _confVel   = 500.0
         , _confVid   = 3.0
         , _confFuer  = 100.0
-        , _confDano  = 250.0
+        , _confDano  = 500.0
         , _confTipo  = GType.MovimientoLineal
         }
+    -- 1. Bala Standard: Matar Zombie (100hp) en 4 tiros -> 25 dmg
     | pid == idParBala = ParticulaConfig 
         { _confTam   = 8.0
         , _confVel   = 1000.0
         , _confVid   = 2.0
         , _confFuer  = 20.0
-        , _confDano  = 20.0
+        , _confDano  = 25.0
         , _confTipo  = GType.MovimientoLineal
         }
     | pid == idParFuego = ParticulaConfig 
@@ -64,12 +67,13 @@ obtenerConfiguracion pid
         , _confDano  = 20.0
         , _confTipo  = GType.MovimientoGradualDown
         }
+-- 3. Chispa (Usada para Sniper): Daño Tanque/2 = 125. Alta velocidad.
     | pid == idParChispa = ParticulaConfig 
         { _confTam   = 6.0
-        , _confVel   = 300.0
-        , _confVid   = 0.3
-        , _confFuer  = 0.0
-        , _confDano  = 50.0
+        , _confVel   = 1500.0 -- Muy rápida
+        , _confVid   = 2.0
+        , _confFuer  = 50.0
+        , _confDano  = 125.0
         , _confTipo  = GType.MovimientoLineal
         }
     | pid == idParHumo = ParticulaConfig 
@@ -183,7 +187,7 @@ generarAbanicoFuego posOrigen anguloBase n genInicial =
   where
     spreadAngle = 30.0
     rVel = (700.0, 1000.0)
-    rVid = (0.4, 0.8)
+    rVid = (0.8, 1.2)
     rTam = (15.0, 35.0)
 
     go 0 gen acc = (acc, gen)
@@ -219,7 +223,7 @@ generarEscopetazo :: SDL.V2 Float -> Float -> Int -> SR.StdGen -> ([GType.Partic
 generarEscopetazo posOrigen anguloBase n genInicial =
     go n genInicial []
   where
-    spreadAngle = 15.0 
+    spreadAngle = 45.0
     rVel = (900.0, 1100.0)
     
     go 0 gen acc = (acc, gen)
@@ -244,6 +248,10 @@ generarSangre pos n genInicial =
             
             part = crearParticula idParSangre pos angle tam 0.0 vida
         in go (k - 1) g3 (part : acc)
+
+generarImpactoRPG :: SDL.V2 Float -> SR.StdGen -> ([GType.Particula], SR.StdGen)
+generarImpactoRPG pos gen = 
+    generarExplosion pos 20 idParCohete (300.0, 800.0) (0.3, 0.6) (12.0, 24.0) gen
 
 actualizarParticulas :: Float -> [GType.Box] -> [GType.Particula] -> [GType.Particula]
 actualizarParticulas dt mapa particulas =

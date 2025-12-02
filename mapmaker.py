@@ -50,7 +50,6 @@ class MainApp(tk.Tk):
                 return messagebox.showwarning("Importar", "No se encontraron obstáculos válidos en el texto o el formato no coincide (GType.Box).")
             
             self.map_canvas.clear_all()
-            # Ahora desempaquetamos 5 valores (x, y, w, h, angle)
             for (x, y, w, h, angle) in datos: 
                 self.map_canvas.add_obstacle(x, y, w, h, angle)
                 

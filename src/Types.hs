@@ -10,6 +10,7 @@ import qualified Personajes.Types   as PType
 data SpawnType 
     = SpawnEnemigo PType.Zombie
     | SpawnItem GType.Item
+    | SpawnItemFijo GType.Item
     deriving (Show, Eq)
 
 data Spawner = Spawner
@@ -22,34 +23,34 @@ data Spawner = Spawner
 LMT.makeLenses ''Spawner
 
 data TutorialFase 
-    = FaseIntro      -- Overlay explicativo del HUD
-    | FaseArmas      -- Entrega de armas y explicación de disparo
-    | FaseCamara     -- Desbloqueo de Zoom y Deadzone
-    | FaseZombieMsg  -- "Cuidado un zombie"
-    | FaseCombate    -- Esperando a que mate al zombie
-    | FaseBuffsMsg   -- Explicación de items y spawn de buffs
-    | FaseBuffsWait  -- Espera (5s)
-    | FaseTiempoMsg  -- Explicación del tiempo
-    | FaseSobrevive  -- Mensaje final
-    | FaseFin        -- Tutorial terminado (Juego normal)
-    | FaseNula       -- No hay tutorial
+    = FaseIntro
+    | FaseArmas
+    | FaseCamara
+    | FaseZombieMsg
+    | FaseCombate
+    | FaseBuffsMsg
+    | FaseBuffsWait 
+    | FaseTiempoMsg
+    | FaseSobrevive
+    | FaseFin
+    | FaseNula
     deriving (Show, Eq)
 
 data GameState = GameState
-    { _camara        ::   GType.Camara
-    , _jugador       ::   PType.Jugador
-    , _rng           ::   SR.StdGen
-    , _enemigos      :: [ PType.Zombie    ]
-    , _items         :: [ GType.Item      ]
-    , _particulas    :: [ GType.Particula ]
-    , _mapa          :: [ GType.Box       ]
-    , _spawners      :: [ Spawner         ]
-    , _tiempoJuego   :: Float
-    , _tiempoTotal   :: Float
-    , _cooldownUI   :: Float
-    , _tutorialActivo :: Bool
-    , _faseTutorial   :: TutorialFase
-    , _timerTutorial  :: Float
+    { _camara           ::   GType.Camara
+    , _jugador          ::   PType.Jugador
+    , _rng              ::   SR.StdGen
+    , _enemigos         :: [ PType.Zombie    ]
+    , _items            :: [ GType.Item      ]
+    , _particulas       :: [ GType.Particula ]
+    , _mapa             :: [ GType.Box       ]
+    , _spawners         :: [ Spawner         ]
+    , _tiempoJuego      :: Float
+    , _tiempoTotal      :: Float
+    , _cooldownUI       :: Float
+    , _tutorialActivo   :: Bool
+    , _faseTutorial     :: TutorialFase
+    , _timerTutorial    :: Float
     } deriving (Show, Eq)
 LMT.makeLenses ''GameState
 

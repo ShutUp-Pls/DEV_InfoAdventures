@@ -15,7 +15,7 @@ import qualified Globals.Camara     as GC
 
 import qualified Mapas.Mapa         as MM
 
-import qualified Objetos.Spawner    as OSpawner
+-- import qualified Objetos.Spawner    as OSpawner
 import qualified Objetos.Particula  as OParticulas
 import qualified Objetos.Buff       as OBuff
 import qualified Objetos.Arma       as OArma
@@ -55,7 +55,7 @@ renderGame renderer font blockTexture skinTexture input gs = do
         ) listaItems
     
     mapM_ (OZombie.dibujar renderer skinTexture camPos zoom)        (gs LMi.^. Types.enemigos)
-    mapM_ (OSpawner.dibujar renderer skinTexture camPos zoom)       (gs LMi.^. Types.spawners)
+    -- mapM_ (OSpawner.dibujar renderer skinTexture camPos zoom)       (gs LMi.^. Types.spawners)
     mapM_ (OParticulas.dibujar renderer skinTexture camPos zoom)    (gs LMi.^. Types.particulas)
     mapM_ (MM.dibujar renderer blockTexture camPos zoom)            (gs LMi.^. Types.mapa)
 

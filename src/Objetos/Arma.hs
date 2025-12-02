@@ -78,19 +78,18 @@ nomItemArmMinigun = "Minigun M134"
 
 crearStatsArma :: Int -> GType.Arma
 crearStatsArma armId
-    | armId == idArmPuño        = mkArma idArmPuño          10.0 80.0 0.1
-    | armId == idArmGlock       = mkArma idArmGlock         10.0 30.0 0.1
-    | armId == idArmEscopeta    = mkArma idArmEscopeta      25.0 20.0 1.0
-    | armId == idArmFusil       = mkArma idArmFusil         6.0 35.0 0.05
-    | armId == idArmLanzallamas = mkArma idArmLanzallamas   3.0 15.0 0.02
-    | armId == idArmSniper      = mkArma idArmSniper        45.0 15.0 1.5   
-    | armId == idArmSMG         = mkArma idArmSMG           2.5  45.0 0.06  
-    | armId == idArmRPG         = mkArma idArmRPG           90.0 10.0 2.0   
-    | armId == idArmPlasma      = mkArma idArmPlasma        7.0  40.0 0.15  
-    | armId == idArmMinigun     = mkArma idArmMinigun       1.8  60.0 0.04  
+    | armId == idArmPuño        = mkArma idArmPuño          10.0   80.0    0.1
+    | armId == idArmGlock       = mkArma idArmGlock         27.5   100.0   0.25
+    | armId == idArmSMG         = mkArma idArmSMG           5.83   33.33   0.125
+    | armId == idArmFusil       = mkArma idArmFusil         2.78   20.0    0.0833
+    | armId == idArmEscopeta    = mkArma idArmEscopeta      40.0   20.0    1.0
+    | armId == idArmSniper      = mkArma idArmSniper        45.0   20.0    1.0
+    | armId == idArmRPG         = mkArma idArmRPG           110.0  10.0    1.0
+    | armId == idArmPlasma      = mkArma idArmPlasma        3.75   20.0    0.125
+    | armId == idArmMinigun     = mkArma idArmMinigun       0.53   6.67    0.04
+    | armId == idArmLanzallamas = mkArma idArmLanzallamas   0.27   6.67    0.02
     | otherwise = error "crearStatsArma: id de arma desconocido"
   where
-    mkArma :: Int -> Float -> Float -> Float -> GType.Arma
     mkArma armaId heatPerShot coolRate fireRate =
         GType.Arma
             { GType._armID          = armaId

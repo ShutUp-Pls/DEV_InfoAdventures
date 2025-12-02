@@ -4,11 +4,12 @@ import qualified SDL
 import qualified System.Random  as SR
 import qualified Lens.Micro     as LMi
 import qualified Linear.Vector  as LV
+import qualified Linear.Metric  as LM
 -- Módulos propios
 import qualified Types
 import qualified Globals.Types      as GType
 import qualified Personajes.Types   as PType
-import qualified Graficos.Dibujado  as GD
+-- import qualified Graficos.Dibujado  as GD
 
 crearSpawner :: SDL.V2 Float -> Float -> Types.SpawnType -> (Float, Float) -> Types.Spawner
 crearSpawner pos radio tipo (tMin, tMax) = Types.Spawner
@@ -36,41 +37,56 @@ posicionAleatoria centro radio gen0 =
                       
     in (centro + finalOffset, gen2)
 
-actualizarSpawners :: Float -> SR.StdGen -> [Types.Spawner] -> ([Types.Spawner], [PType.Zombie], [GType.Item], SR.StdGen)
-actualizarSpawners dt genInicial listaSpawners = 
+actualizarSpawners :: Float -> SR.StdGen -> [Types.Spawner] -> [GType.Item] -> ([Types.Spawner], [PType.Zombie], [GType.Item], SR.StdGen)
+actualizarSpawners dt genInicial listaSpawners itemsExistentes = 
     foldr procesar ([], [], [], genInicial) listaSpawners
   where
     procesar spawner (sAcc, eAcc, iAcc, genActual) =
         let nuevoTiempo = (spawner LMi.^. Types.tiempoActual) - dt
         in if nuevoTiempo <= 0
            then 
-               let 
+               -- Lógica común de tiempo y RNG
+               let (tMin, tMax) = spawner LMi.^. Types.rangoTiempo
+                   (proxTiempo, genTemp) = SR.randomR (tMin, tMax) genActual
+                   
+                   -- Datos del spawner
                    posCentro = spawner LMi.^. Types.spaBox . GType.boxPos
                    radio     = spawner LMi.^. Types.areaSpawn
-                   (posSpawn, gen1) = posicionAleatoria posCentro radio genActual
-                   
-                   (tMin, tMax) = spawner LMi.^. Types.rangoTiempo
-                   (proxTiempo, gen2) = SR.randomR (tMin, tMax) gen1
 
-                   spawnerReiniciado = spawner LMi.& Types.tiempoActual LMi..~ proxTiempo
-                   (nuevosEnemigos, nuevosItems) = case spawner LMi.^. Types.tipoSpawn of
+               in case spawner LMi.^. Types.tipoSpawn of
+                    -- LOGICA NUEVA: Spawner Fijo
+                    Types.SpawnItemFijo itemModelo ->
+                        let 
+                            estaOcupado = any (\it -> LM.distance (it LMi.^. GType.iteBox . GType.boxPos) posCentro < 20.0) itemsExistentes
+                        in if estaOcupado
+                           then 
+                               let spawnerWait = spawner LMi.& Types.tiempoActual LMi..~ proxTiempo
+                               in (spawnerWait : sAcc, eAcc, iAcc, genTemp)
+                           else
+                               let newItem = itemModelo 
+                                        LMi.& GType.iteBox . GType.boxPos LMi..~ posCentro
+                                        LMi.& GType.iteAct LMi..~ True
+                                   spawnerReiniciado = spawner LMi.& Types.tiempoActual LMi..~ proxTiempo
+                               in (spawnerReiniciado : sAcc, eAcc, newItem : iAcc, genTemp)
+                    Types.SpawnEnemigo enemigoModelo -> 
+                        let (posSpawn, genPos) = posicionAleatoria posCentro radio genTemp
+                            enemigoFinal = enemigoModelo 
+                                     LMi.& PType.zmbEnt . GType.entBox . GType.boxPos LMi..~ posSpawn
+                            spawnerReiniciado = spawner LMi.& Types.tiempoActual LMi..~ proxTiempo
+                        in (spawnerReiniciado : sAcc, enemigoFinal : eAcc, iAcc, genPos)
 
-                       Types.SpawnEnemigo enemigoModelo -> 
-                           let enemigoFinal = enemigoModelo 
-                                    LMi.& PType.zmbEnt . GType.entBox . GType.boxPos LMi..~ posSpawn
-                           in ([enemigoFinal], [])
+                    Types.SpawnItem itemModelo -> 
+                        let (posSpawn, genPos) = posicionAleatoria posCentro radio genTemp
+                            newItem = itemModelo 
+                                     LMi.& GType.iteBox . GType.boxPos LMi..~ posSpawn
+                                     LMi.& GType.iteAct LMi..~ True
+                            spawnerReiniciado = spawner LMi.& Types.tiempoActual LMi..~ proxTiempo
+                        in (spawnerReiniciado : sAcc, eAcc, newItem : iAcc, genPos)
 
-                       Types.SpawnItem itemModelo -> 
-                           let newItem = itemModelo 
-                                    LMi.& GType.iteBox . GType.boxPos LMi..~ posSpawn
-                                    LMi.& GType.iteAct LMi..~ True
-                           in ([], [newItem])
-
-               in (spawnerReiniciado : sAcc, nuevosEnemigos ++ eAcc, nuevosItems ++ iAcc, gen2)
            else 
                let spawnerActualizado = spawner LMi.& Types.tiempoActual LMi..~ nuevoTiempo
                in (spawnerActualizado : sAcc, eAcc, iAcc, genActual)
-
+{-
 dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> Types.Spawner -> IO ()
 dibujar renderer texture camPos zoom spawner = do
     let pos = spawner LMi.^. Types.spaBox . GType.boxPos
@@ -81,3 +97,4 @@ dibujar renderer texture camPos zoom spawner = do
         then do
             GD.dibujarTextura renderer texture camPos zoom pos tam ang (SDL.V4 128 0 128 255)
         else return()
+-}

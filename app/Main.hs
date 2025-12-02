@@ -19,28 +19,24 @@ main :: IO ()
 main = do
     SDL.initializeAll
     Font.initialize
-
     window <- SDL.createWindow "Juego full Haskell" SDL.defaultWindow
         { SDL.windowInitialSize = SDL.V2 RD.screenWidth RD.screenHeight }
     renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
-
-    appFlow renderer window
-
+    appFlow renderer window True
     SDL.destroyRenderer renderer
     SDL.destroyWindow window
     Font.quit
     SDL.quit
 
-appFlow :: SDL.Renderer -> SDL.Window -> IO ()
-appFlow renderer window = do
-    decision <- Launcher.runLauncher window renderer
-    
+appFlow :: SDL.Renderer -> SDL.Window -> Bool -> IO ()
+appFlow renderer window lastTutorialState = do
+    decision <- Launcher.runLauncher window renderer lastTutorialState
     case decision of
         Launcher.ActionExit -> putStrLn "Saliendo de la aplicación..." 
-        Launcher.ActionPlay modoTutorial -> do
-            putStrLn $ "Iniciando juego... (Tutorial: " ++ show modoTutorial ++ ")"
-            correrJuego renderer modoTutorial
-            appFlow renderer window
+        Launcher.ActionPlay modoTutorialElegido -> do
+            putStrLn $ "Iniciando juego... (Tutorial: " ++ show modoTutorialElegido ++ ")"        
+            correrJuego renderer modoTutorialElegido
+            appFlow renderer window modoTutorialElegido
 
 correrJuego :: SDL.Renderer -> Bool -> IO ()
 correrJuego renderer isTutorial = do

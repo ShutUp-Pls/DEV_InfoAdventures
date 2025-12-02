@@ -49,9 +49,10 @@ resolverDisparo jug wId rng =
     let (pos, ang) = calcularSalida (jug LMi.^. PType.jugEnt . GType.entBox)
     in case wId of
         _ | wId == OArma.idArmLanzallamas -> OPart.generarAbanicoFuego pos ang 5 rng
-          | wId == OArma.idArmEscopeta    -> OPart.generarEscopetazo pos ang 6 rng
+          | wId == OArma.idArmEscopeta    -> OPart.generarEscopetazo pos ang 10 rng
           | wId == OArma.idArmRPG         -> (OPart.generarProyectil OPart.idParCohete pos ang, rng)
           | wId == OArma.idArmPlasma      -> (OPart.generarProyectil OPart.idParPlasma pos ang, rng)
+          | wId == OArma.idArmSniper      -> (OPart.generarProyectil OPart.idParChispa pos ang, rng)
           | otherwise                     -> (OPart.generarProyectil OPart.idParBala pos ang, rng)
 
 calcularSalida :: GType.Box -> (SDL.V2 Float, Float)

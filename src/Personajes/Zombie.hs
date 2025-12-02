@@ -63,9 +63,9 @@ crearStatsVidaZombie zId
 
 crearEmpujeZombie :: Int -> GType.Empuje
 crearEmpujeZombie zId
-    | zId == idZmbBasico   = mkEmp 5.0
-    | zId == idZmbCorredor = mkEmp 3.0
-    | zId == idZmbTanque   = mkEmp 8.0
+    | zId == idZmbBasico   = mkEmp 7.5
+    | zId == idZmbCorredor = mkEmp 5.0
+    | zId == idZmbTanque   = mkEmp 10.0
     | otherwise            = error "crearEmpujeZombieTipo: id de zombie desconocido"
   where
     mkEmp frz = GType.Empuje

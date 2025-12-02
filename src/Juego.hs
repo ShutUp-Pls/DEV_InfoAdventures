@@ -66,11 +66,12 @@ actualizarSistemasGlobalesM = do
     
     rng      <- LMi.use Types.rng
     spawners <- LMi.use Types.spawners
+    items    <- LMi.use Types.items
     
     let procesarSpawners = relojActivo
 
     if procesarSpawners then do
-        let (spawnersAct, nuevosEnemigos, nuevosItems, sigRng) = OS.actualizarSpawners dt rng spawners
+        let (spawnersAct, nuevosEnemigos, nuevosItems, sigRng) = OS.actualizarSpawners dt rng spawners items
         Types.spawners LMi..= spawnersAct
         Types.enemigos LMi.%= (++ nuevosEnemigos)
         Types.items    LMi.%= (++ nuevosItems)
@@ -171,6 +172,7 @@ actualizarParticulasM = do
     mapa       <- LMi.use Types.mapa
     let particulasVivas = OPart.actualizarParticulas dt mapa particulas
     Types.particulas LMi..= particulasVivas
+    
 moverZombiesM :: CMS.State Types.GameState ()
 moverZombiesM = do
     mapa     <- LMi.use Types.mapa
@@ -405,7 +407,7 @@ actualizarTutorialM input = do
                 let (ry, r2) = SR.randomR (-500.0, 500.0) r1
                 Types.rng LMi..= r2
                 
-                let bTiempo = OBuff.crearItemBuff OBuff.idBuffTiempo (posJug + SDL.V2 rx ry)
+                let bTiempo = OBuff.crearItemBuff OBuff.idBuffTiempoA (posJug + SDL.V2 rx ry)
                 Types.items LMi.%= (++ [bTiempo])
 
         Types.FaseTiempoMsg -> do

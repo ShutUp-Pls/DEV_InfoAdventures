@@ -231,8 +231,8 @@ launcherLoop window renderer bgTexture font st = do
             SDL.delay 16 
             launcherLoop window renderer bgTexture font st'
 
-runLauncher :: SDL.Window -> SDL.Renderer -> IO LauncherAction
-runLauncher window renderer = do
+runLauncher :: SDL.Window -> SDL.Renderer -> Bool -> IO LauncherAction
+runLauncher window renderer initialTutorialState = do
     font <- Font.load "assets/font.ttf" 24
     bgSurface <- IMG.load "assets/fondo-launcher.png" 
     bgTexture <- SDL.createTextureFromSurface renderer bgSurface
@@ -241,7 +241,7 @@ runLauncher window renderer = do
     let initialState = LauncherState 
             { finalAction = Nothing
             , mousePos = (0,0)
-            , tutorialMode = True
+            , tutorialMode = initialTutorialState 
             , showNotImpl = False
             }
     

@@ -6,8 +6,6 @@ import qualified Lens.Micro             as LMi
 import qualified Lens.Micro.Mtl         as LMi
 import qualified Linear.Vector          as LV
 import qualified Control.Monad.State    as CMS
-import qualified Data.List              as DL
-import qualified Fisica.Colisiones      as FCol
 -- Módulos propios
 import qualified Types
 import qualified Globals.Types          as GType
@@ -134,32 +132,11 @@ desplazarJugadorM input mapObstaculos = do
                     in velocidadFinal * factorAlineacion
 
     let vecDir       = FAng.anguloAVector anguloActual
-        velIntencion = vecDir LV.^* magnitud
-
-    let entidadFinal = FMen.moverEntidad velIntencion mapObstaculos entidad
+    let velIntencion = vecDir LV.^* magnitud
+    let entidadMovida = FMen.moverEntidad velIntencion mapObstaculos entidad
+    let entidadFinal = entidadMovida LMi.& GType.entMov . GType.movAct LMi..~ magnitud
     
     PType.jugEnt LMi..= entidadFinal
-
-logicaGestionItems :: PType.Jugador -> [GType.Item] -> (PType.Jugador, [GType.Item], Float)
-logicaGestionItems jug items = 
-    let boxJug = jug LMi.^. PType.jugEnt . GType.entBox
-        itemsTocados   = FCol.checkColisionsItems boxJug items
-        itemsRestantes = filter (\it -> not (it `elem` itemsTocados)) items
-
-        (itemsTiempo, itemsOtros) = DL.partition OBuff.esItemTiempo itemsTocados
-        
-        tiempoTotal = sum $ map (\it -> 
-            case it LMi.^. GType.iteTipo of 
-                 GType.EsBuff b -> b LMi.^. GType.bufVlr
-                 _ -> 0
-            ) itemsTiempo
-            
-        (equipables, consumibles) = DL.partition (\it -> it LMi.^. GType.iteInv) itemsOtros
-        
-        jugConBuffs = foldr (\it j -> aplicarEfecto it j) jug consumibles
-        jugFinal    = foldr equiparItem jugConBuffs equipables
-
-    in (jugFinal, itemsRestantes, tiempoTotal)
 
 cambiarArmaSiguiente :: PType.Jugador -> PType.Jugador
 cambiarArmaSiguiente jug =
@@ -231,23 +208,23 @@ dibujar renderer skinTexture camPos zoom player = do
         else return()
 
 aplicarEfecto :: GType.Item -> PType.Jugador -> PType.Jugador
-aplicarEfecto item j = 
+aplicarEfecto item j =
     let maybeBuff = item LMi.^? GType.iteTipo . GType._EsBuff
     in case maybeBuff of
         Nothing -> j
         Just buffOriginal ->
-            let 
-                bid = buffOriginal LMi.^. GType.bufID
+            let bid = buffOriginal LMi.^. GType.bufID
                 val = buffOriginal LMi.^. GType.bufVlr
-            in 
-                if bid == OBuff.idBuffVidA then
-                    j LMi.& PType.jugEnt . GType.entVid . GType.vidAct LMi.%~ (\v -> min 100 (v + val))
-                else if bid == OBuff.idBuffTiempo then
-                     j 
-                else 
-                    let currentBuffs = j LMi.^. PType.jugEnt . GType.entBuf
-                        nuevosBuffs  = OBuff.agregarBuff buffOriginal currentBuffs
-                    in j LMi.& PType.jugEnt . GType.entBuf LMi..~ nuevosBuffs
+                currentBuffs = j LMi.^. PType.jugEnt . GType.entBuf
+            in
+                if bid `elem` OBuff.idsVida then
+                    j LMi.& PType.jugEnt . GType.entVid . GType.vidAct
+                        LMi.%~ (\v -> min 100 (v + val))
+                else if bid `elem` OBuff.idsTiempo then
+                    j
+                else
+                    let nuevosBuffs = OBuff.agregarBuff buffOriginal currentBuffs
+                    in  j LMi.& PType.jugEnt . GType.entBuf LMi..~ nuevosBuffs
 
 procesarBuffs :: Float -> PType.Jugador -> PType.Jugador
 procesarBuffs dt jug = 

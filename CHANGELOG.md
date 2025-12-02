@@ -171,14 +171,23 @@
 
  >*Nota*: Escribiendo el readme me di cuenta que he estado no aprovechando del todo las `Fisica.Combates`, por lo que habrá una siguiente refactorización que utilizaré para ejemplificar en el informa
 
- ## 1.0.1.1 -- 2025-11-01
+ ## 1.0.1.1 -- 2025-11-02
   * Un ejemplo muy ilustrativo de la  aplicación de `monadeStates` en el codigo real.
 
- ## 2.0.0.0 -- 2025-11-01
+ ## 2.0.0.0 -- 2025-11-02
   * Se implementa tutorial de juego.
   * Se arregla el estado de las `monadeStates` en `Juego.hs` para que se aproveche el estilo monadico.
   * Se ajustan parametros del juego para mejorar gameplay.
   * Se elimina codigo redundate y duplicado.
   * Se optimiza el checkeo de colisiones que realintazaba el juego.
   * ¿Armas invisibles?
-  * Versión funcional no balanceada.
+  * Versión funcional "balanceada".
+
+## 2.0.0.1 -- 2025-11-02
+  * Mapa ahora si completo.
+  * Arreglo de bugs y balanceo de armas.
+  * Se añade Makefile
+  * Se completa el `README.md
+  * Se corrige la fecha anterior del Changelog para correlación con la realidad de los 'commits'.
+
+ >*Nota*: ¡Por fin!

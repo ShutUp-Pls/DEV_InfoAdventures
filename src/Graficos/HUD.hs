@@ -74,7 +74,7 @@ dibujarBuffs renderer font texture buffs winW = loopDraw buffs startY
     loopDraw [] _ = return ()
     loopDraw (b:bs) y = do
         let bID = b LMi.^. GType.bufID
-        let bloqueX = centerX - 160
+        let bloqueX = centerX - 170
         
         let posIcono = SDL.V2 bloqueX (fromIntegral y)
         let sizeIconoV = SDL.V2 (fromIntegral iconSize) (fromIntegral iconSize)

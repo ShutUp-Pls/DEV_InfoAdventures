@@ -11,13 +11,13 @@ import qualified Globals.Types      as GType
 import qualified Graficos.Dibujado  as GD
 
 
-idBuffVelA, idBuffVidA, idBuffTiempo :: Int
+idBuffVelA, idBuffVidA, idBuffTiempoA :: Int
 idBuffVelA   = 1
 idBuffVidA   = 2
-idBuffTiempo = 999 
+idBuffTiempoA = 999 
 
 nomBuffVelA, nomBuffVidA, nomBuffTiempo :: DT.Text
-nomBuffVelA   = "Bebida Energética"
+nomBuffVelA   = "Bebida Cafeinizada"
 nomBuffVidA   = "Poción de Vida"
 nomBuffTiempo = "Reloj de Arena"
 
@@ -30,29 +30,29 @@ idBuffTiempoB = 998
 idBuffTiempoC = 997
 
 nomBuffVelB, nomBuffVelC, nomBuffVidB, nomBuffVidC, nomBuffTiempoB, nomBuffTiempoC :: DT.Text
-nomBuffVelB    = "Bebida Energética Turbo"
-nomBuffVelC    = "Bebida Energética Nuclear"
+nomBuffVelB    = "Bebida Energetica"
+nomBuffVelC    = "Cafe con Coca-Cola"
 nomBuffVidB    = "Poción Mayor"
 nomBuffVidC    = "Elixir Completo"
-nomBuffTiempoB = "Reloj de Arena Místico"
+nomBuffTiempoB = "Reloj Mistico"
 nomBuffTiempoC = "Crono-Cristal"
 
 idsVelocidad, idsVida, idsTiempo :: [Int]
 idsVelocidad = [idBuffVelA, idBuffVelB, idBuffVelC]
 idsVida      = [idBuffVidA, idBuffVidB, idBuffVidC]
-idsTiempo    = [idBuffTiempo, idBuffTiempoB, idBuffTiempoC]
+idsTiempo    = [idBuffTiempoA, idBuffTiempoB, idBuffTiempoC]
 
 crearStatsBuff :: Int -> GType.Buff
 crearStatsBuff bId
-    | bId == idBuffVelA     = mkBuff idBuffVelA     15.0 1.5  nomBuffVelA
-    | bId == idBuffVidA     = mkBuff idBuffVidA     0.0  25.0 nomBuffVidA
-    | bId == idBuffTiempo   = mkBuff idBuffTiempo   0.0  10.0 nomBuffTiempo 
-    | bId == idBuffVelB     = mkBuff idBuffVelB     10.0 2.0  nomBuffVelB
-    | bId == idBuffVelC     = mkBuff idBuffVelC     7.5 2.5  nomBuffVelC
-    | bId == idBuffVidB     = mkBuff idBuffVidB     0.0  50.0 nomBuffVidB
-    | bId == idBuffVidC     = mkBuff idBuffVidC     0.0  100.0 nomBuffVidC
-    | bId == idBuffTiempoB  = mkBuff idBuffTiempoB  0.0  20.0 nomBuffTiempoB
-    | bId == idBuffTiempoC  = mkBuff idBuffTiempoC  0.0  30.0 nomBuffTiempoC
+    | bId == idBuffVelA     = mkBuff idBuffVelA     15.0 1.5    nomBuffVelA
+    | bId == idBuffVidA     = mkBuff idBuffVidA     0.0  25.0   nomBuffVidA
+    | bId == idBuffTiempoA   = mkBuff idBuffTiempoA   0.0  10.0   nomBuffTiempo 
+    | bId == idBuffVelB     = mkBuff idBuffVelB     10.0 2.0    nomBuffVelB
+    | bId == idBuffVelC     = mkBuff idBuffVelC     7.5  2.5    nomBuffVelC
+    | bId == idBuffVidB     = mkBuff idBuffVidB     0.0  50.0   nomBuffVidB
+    | bId == idBuffVidC     = mkBuff idBuffVidC     0.0  100.0  nomBuffVidC
+    | bId == idBuffTiempoB  = mkBuff idBuffTiempoB  0.0  20.0   nomBuffTiempoB
+    | bId == idBuffTiempoC  = mkBuff idBuffTiempoC  0.0  30.0   nomBuffTiempoC
     | otherwise             = error $ "crearStatsBuff: ID desconocido " ++ show bId
   where
     mkBuff i t v n = GType.Buff 
@@ -62,7 +62,7 @@ crearBoxBuff :: Int -> SDL.V2 Float -> GType.Box
 crearBoxBuff bId pos
     | bId == idBuffVelA     = mkBox pos 20.0 
     | bId == idBuffVidA     = mkBox pos 20.0 
-    | bId == idBuffTiempo   = mkBox pos 20.0 
+    | bId == idBuffTiempoA   = mkBox pos 20.0 
     | bId == idBuffVelB     = mkBox pos 20.0
     | bId == idBuffVelC     = mkBox pos 20.0
     | bId == idBuffVidB     = mkBox pos 20.0
@@ -79,7 +79,7 @@ crearItemBuff bId pos =
     let (itemId, itemNom) = case bId of
             _ | bId == idBuffVelA       -> (idBuffVelA, nomBuffVelA)
               | bId == idBuffVidA       -> (idBuffVidA, nomBuffVidA)
-              | bId == idBuffTiempo     -> (idBuffTiempo,   nomBuffTiempo)
+              | bId == idBuffTiempoA     -> (idBuffTiempoA,   nomBuffTiempo)
               | bId == idBuffVelB       -> (idBuffVelB,    nomBuffVelB)
               | bId == idBuffVelC       -> (idBuffVelC,    nomBuffVelC)
               | bId == idBuffVidB       -> (idBuffVidB,    nomBuffVidB)
@@ -116,9 +116,9 @@ agregarBuff nuevoBuff listaActual =
             in buffActualizado : otros
 
 esItemTiempo :: GType.Item -> Bool
-esItemTiempo item = 
+esItemTiempo item =
     case item LMi.^. GType.iteTipo of
-        GType.EsBuff b -> (b LMi.^. GType.bufID) == idBuffTiempo
+        GType.EsBuff b -> (b LMi.^. GType.bufID) `elem` idsTiempo
         _              -> False
 
 dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> GType.Item -> IO ()
@@ -196,7 +196,7 @@ damePartesBuff bId
         , (SDL.V2 10 20,   SDL.V2 5 5,   SDL.V4 255 255 255 200) 
         , (SDL.V2 25 30,   SDL.V2 3 3,   SDL.V4 255 255 255 200) 
         ]
-    | bId == idBuffTiempo = 
+    | bId == idBuffTiempoA = 
         [ (SDL.V2 0 0,     SDL.V2 40 6,  SDL.V4 101 67 33 255)
         , (SDL.V2 0 44,    SDL.V2 40 6,  SDL.V4 101 67 33 255)
         , (SDL.V2 2 6,     SDL.V2 4 38,  SDL.V4 101 67 33 255)
