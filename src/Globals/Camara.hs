@@ -17,7 +17,7 @@ velZoomManual :: Float
 velZoomManual = 0.02
 -- El zoom más alejado permitido
 zoomMinimo :: Float
-zoomMinimo = 0.25
+zoomMinimo = 0.4
 -- El zoom más cercano permitido manualmente
 zoomMaxUsuario :: Float
 zoomMaxUsuario = 3.0       

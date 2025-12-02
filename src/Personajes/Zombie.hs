@@ -34,7 +34,6 @@ crearBoxZombie zId pos
         , GType._boxRad = rad
         }
 
-
 crearStatsMovimientoZombie :: Int -> GType.Movimiento
 crearStatsMovimientoZombie zId
     | zId == idZmbBasico   = mkMov 2.5  15.0 1.0
@@ -53,7 +52,7 @@ crearStatsVidaZombie :: Int -> GType.Vida
 crearStatsVidaZombie zId
     | zId == idZmbBasico   = mkVida 100.0
     | zId == idZmbCorredor = mkVida  70.0
-    | zId == idZmbTanque   = mkVida 220.0
+    | zId == idZmbTanque   = mkVida 250.0
     | otherwise            = error "crearStatsVidaZombieTipo: id de zombie desconocido"
   where
     mkVida v = GType.Vida
@@ -89,28 +88,29 @@ crearZombie :: Int -> SDL.V2 Float -> PType.Zombie
 crearZombie zId pos = 
     let (radVis, dano, teamR) =
             if      zId == idZmbBasico
-            then (1000.0, 20.0, 1.0)
+            then (5000.0, 10.0, 1.0)
             else if zId == idZmbCorredor
-            then (2000.0, 15.0, 0.8)
+            then (5000.0, 5.0, 0.8)
             else if zId == idZmbTanque
-            then (800.0, 35.0, 1.3)
+            then (5000.0, 20.0, 1.3)
             else error "crearZombieTipo: id de zombie desconocido"
     in PType.Zombie
-        { PType._zmbEnt    = crearEntidadZombie zId pos
-        , PType._zmbRadVis = radVis
-        , PType._zmbVerJug = False
-        , PType._zmbDamage = dano
-        , PType._zmbTeamRd = teamR
-        , PType._zmdId     = zId
+        { PType._zmbEnt         = crearEntidadZombie zId pos
+        , PType._zmbRadVis      = radVis
+        , PType._zmbVerJug      = False
+        , PType._zmbDamage      = dano
+        , PType._zmbTeamRd      = teamR
+        , PType._zmdId          = zId
+        , PType._zmbHitTimer    = 0.0
         }
 
-moverZombies :: PType.Jugador -> [PType.Zombie] -> [GType.Box] -> [PType.Zombie]
-moverZombies jug enemigos mapa =
-    let zombiesMovidos = map (\enemy -> moverZombie enemy mapa jug) enemigos
+moverZombies :: Float -> PType.Jugador -> [PType.Zombie] -> [GType.Box] -> [PType.Zombie]
+moverZombies dt jug enemigos mapa =
+    let zombiesMovidos = map (\enemy -> moverZombie dt enemy mapa jug) enemigos
     in resolverColisionesEntreZombies zombiesMovidos
 
-moverZombie :: PType.Zombie -> [GType.Box] -> PType.Jugador -> PType.Zombie
-moverZombie zombieActual mapObstaculos player = 
+moverZombie :: Float -> PType.Zombie -> [GType.Box] -> PType.Jugador -> PType.Zombie
+moverZombie dt zombieActual mapObstaculos player =
     let 
         entidadInicial  = zombieActual   LMi.^. PType.zmbEnt
         rangoVis        = zombieActual   LMi.^. PType.zmbRadVis
@@ -123,6 +123,7 @@ moverZombie zombieActual mapObstaculos player =
         zombieActual 
             LMi.& PType.zmbEnt LMi..~ entidadFinal
             LMi.& PType.zmbVerJug LMi..~ detectado
+            LMi.& PType.zmbHitTimer LMi.%~ (\t -> max 0 (t - dt))
 
 limpiarZombiesMuertos :: [PType.Zombie] -> [PType.Zombie]
 limpiarZombiesMuertos = filter (\z -> (z LMi.^. PType.zmbEnt . GType.entVid . GType.vidAct) > 0)
@@ -136,7 +137,7 @@ resolverColisionesEntreZombies zombies =
 colorZombie :: Int -> SDL.V4 DW.Word8
 colorZombie zId
     | zId == idZmbBasico   = SDL.V4 200  30  30 255
-    | zId == idZmbCorredor = SDL.V4  30 200  30 255
+    | zId == idZmbCorredor = SDL.V4 115  10 115 255
     | zId == idZmbTanque   = SDL.V4  60  60 200 255
     | otherwise            = SDL.V4 255 255 255 255
 
@@ -145,6 +146,30 @@ dibujar renderer skinTexture camPos zoom enem = do
     let posE = enem LMi.^. PType.zmbEnt . GType.entBox . GType.boxPos
     let tamE = enem LMi.^. PType.zmbEnt . GType.entBox . GType.boxTam
     let angE = enem LMi.^. PType.zmbEnt . GType.entBox . GType.boxAng
-    let col  = colorZombie (enem LMi.^. PType.zmdId)
 
-    GD.dibujarTextura renderer skinTexture camPos zoom posE tamE angE col
+    if GD.esVisible posE tamE angE camPos zoom 
+        then do
+            let col  = colorZombie (enem LMi.^. PType.zmdId)
+            GD.dibujarTextura renderer skinTexture camPos zoom posE tamE angE col
+            let timer = enem LMi.^. PType.zmbHitTimer
+            if timer > 0 then dibujarBarraVida renderer skinTexture camPos zoom enem else return ()
+
+        else return()
+
+dibujarBarraVida :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> PType.Zombie -> IO ()
+dibujarBarraVida renderer texture camPos zoom enem = do
+    let entidad = enem LMi.^. PType.zmbEnt
+    let vidaAct = entidad LMi.^. GType.entVid . GType.vidAct
+    let vidaMax = entidad LMi.^. GType.entVid . GType.vidMax
+    let (SDL.V2 px py) = entidad LMi.^. GType.entBox . GType.boxPos
+    let (SDL.V2 w _)   = entidad LMi.^. GType.entBox . GType.boxTam
+
+    let porcentaje = max 0 (min 1 (vidaAct / vidaMax))
+    let anchoBarra = w + 10.0 
+    let altoBarra  = 5.0
+    let posBarra = SDL.V2 px (py - (w/2) - 10) 
+
+    GD.dibujarTextura renderer texture camPos zoom posBarra (SDL.V2 anchoBarra altoBarra) 0 (SDL.V4 0 0 0 200)
+
+    let anchoVida = anchoBarra * porcentaje
+    GD.dibujarTextura renderer texture camPos zoom posBarra (SDL.V2 anchoVida altoBarra) 0 (SDL.V4 150 0 0 255)

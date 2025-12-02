@@ -75,6 +75,7 @@ checkImpactoUnico particula zombies =
                     zombieFinal = z 
                         LMi.& PType.zmbEnt LMi..~ zEntFinal
                         LMi.& PType.zmbVerJug LMi..~ True
+                        LMi.& PType.zmbHitTimer LMi..~ 2.0
 
                 in Just (idx, zombieFinal)
 

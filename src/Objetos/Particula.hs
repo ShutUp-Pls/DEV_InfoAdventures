@@ -7,6 +7,8 @@ import qualified System.Random  as SR
 -- Modulos propios
 import qualified Globals.Types      as GType
 
+import qualified Fisica.Colisiones  as FCol
+
 import qualified Graficos.Dibujado  as GD
 
 idParBala, idParFuego, idParChispa, idParHumo :: Int
@@ -14,6 +16,10 @@ idParBala   = 2000
 idParChispa = 2001
 idParHumo   = 2002
 idParFuego  = 2003
+idParPlasma, idParCohete, idParSangre :: Int
+idParPlasma = 2004
+idParCohete = 2005
+idParSangre = 2006
 
 data ParticulaConfig = ParticulaConfig
     { _confTam   :: Float
@@ -26,6 +32,22 @@ data ParticulaConfig = ParticulaConfig
 
 obtenerConfiguracion :: Int -> ParticulaConfig
 obtenerConfiguracion pid
+    | pid == idParPlasma = ParticulaConfig 
+        { _confTam   = 12.0
+        , _confVel   = 850.0
+        , _confVid   = 1.5
+        , _confFuer  = 30.0
+        , _confDano  = 45.0
+        , _confTipo  = GType.MovimientoLineal
+        }
+    | pid == idParCohete = ParticulaConfig 
+        { _confTam   = 18.0
+        , _confVel   = 500.0
+        , _confVid   = 3.0
+        , _confFuer  = 100.0
+        , _confDano  = 250.0
+        , _confTipo  = GType.MovimientoLineal
+        }
     | pid == idParBala = ParticulaConfig 
         { _confTam   = 8.0
         , _confVel   = 1000.0
@@ -47,7 +69,7 @@ obtenerConfiguracion pid
         , _confVel   = 300.0
         , _confVid   = 0.3
         , _confFuer  = 0.0
-        , _confDano  = 15.0
+        , _confDano  = 50.0
         , _confTipo  = GType.MovimientoLineal
         }
     | pid == idParHumo = ParticulaConfig 
@@ -57,6 +79,14 @@ obtenerConfiguracion pid
         , _confFuer  = 0.0
         , _confDano  = 0.0
         , _confTipo  = GType.MovimientoGradualDown
+        }
+    | pid == idParSangre = ParticulaConfig 
+        { _confTam   = 10.0
+        , _confVel   = 350.0
+        , _confVid   = 0.8
+        , _confFuer  = 0.0
+        , _confDano  = 0.0
+        , _confTipo  = GType.MovimientoLinealDecr
         }
     | otherwise = error $ "Configuración no definida para ID: " ++ show pid
 
@@ -120,7 +150,7 @@ crearEntidadDinamica config pos angulo tamano velocidad vida = GType.Entidad
     { GType._entBox = mkBoxDinamica pos angulo tamano
     , GType._entMov = mkMovDinamica velocidad
     , GType._entVid = mkVidaDinamica vida
-    , GType._entEmp = crearEmpujeDesdeConfig config -- Usa la fuerza del tipo
+    , GType._entEmp = crearEmpujeDesdeConfig config 
     , GType._entBuf = []
     , GType._entInv = []
     , GType._entHnd = GType.itemVacio
@@ -152,7 +182,7 @@ generarAbanicoFuego posOrigen anguloBase n genInicial =
     go n genInicial []
   where
     spreadAngle = 30.0
-    rVel = (350.0, 550.0)
+    rVel = (700.0, 1000.0)
     rVid = (0.4, 0.8)
     rTam = (15.0, 35.0)
 
@@ -185,12 +215,50 @@ generarProyectil pId posBoquilla angulo =
             }
         ]
 
-actualizarParticulas :: Float -> [GType.Particula] -> [GType.Particula]
-actualizarParticulas dt particulas =
+generarEscopetazo :: SDL.V2 Float -> Float -> Int -> SR.StdGen -> ([GType.Particula], SR.StdGen)
+generarEscopetazo posOrigen anguloBase n genInicial =
+    go n genInicial []
+  where
+    spreadAngle = 15.0 
+    rVel = (900.0, 1100.0)
+    
+    go 0 gen acc = (acc, gen)
+    go k gen acc =
+        let
+            (angleVar, g1) = SR.randomR (-spreadAngle/2, spreadAngle/2) gen
+            finalAngle = anguloBase + angleVar
+            (speed, g2) = SR.randomR rVel g1
+            partBase = crearParticula idParBala posOrigen finalAngle 6.0 speed 0.5
+        in go (k - 1) g2 (partBase : acc)
+
+generarSangre :: SDL.V2 Float -> Int -> SR.StdGen -> ([GType.Particula], SR.StdGen)
+generarSangre pos n genInicial = 
+    go n genInicial []
+  where
+    go 0 gen acc = (acc, gen)
+    go k gen acc =
+        let 
+            (angle, g1) = SR.randomR (0.0, 360.0) gen
+            (vida,  g2) = SR.randomR (0.3, 0.6) g1 
+            (tam,   g3) = SR.randomR (8.0, 12.0) g2
+            
+            part = crearParticula idParSangre pos angle tam 0.0 vida
+        in go (k - 1) g3 (part : acc)
+
+actualizarParticulas :: Float -> [GType.Box] -> [GType.Particula] -> [GType.Particula]
+actualizarParticulas dt mapa particulas =
     let 
         particulasProcesadas = map (procesarParticula dt) particulas
         particulasVivas      = filter (\p -> (p LMi.^. GType.parEnt . GType.entVid . GType.vidAct) > 0) particulasProcesadas
-    in particulasVivas
+        particulasSinMuro    = filter (\p -> not (colisionaConMuro p mapa)) particulasVivas
+    in particulasSinMuro
+
+colisionaConMuro :: GType.Particula -> [GType.Box] -> Bool
+colisionaConMuro p mapa =
+    let box = p LMi.^. GType.parEnt . GType.entBox
+    in case FCol.checkColision box mapa of
+        Just _  -> True
+        Nothing -> False
 
 procesarParticula :: Float -> GType.Particula -> GType.Particula
 procesarParticula dt particulaInicial =
@@ -212,24 +280,55 @@ procesarParticula dt particulaInicial =
 
 aplicarComportamiento :: GType.ComportamientoParticula -> GType.Particula -> GType.Particula
 aplicarComportamiento tipo p =
+    let pId       = p LMi.^. GType.parId
+        conf      = obtenerConfiguracion pId
+        velBase   = _confVel conf
+        
+        vidAct    = p LMi.^. GType.parEnt . GType.entVid . GType.vidAct
+        vidMax    = p LMi.^. GType.parEnt . GType.entVid . GType.vidMax
+        
+        ratio     = if vidMax > 0 then vidAct / vidMax else 0
+    in
     case tipo of
         GType.MovimientoLineal -> p
         GType.MovimientoGradualDown -> p
                 LMi.& GType.parEnt . GType.entMov . GType.movVel LMi.%~ (* 0.90)
                 LMi.& GType.parEnt . GType.entBox . GType.boxTam LMi.%~ (LV.^* 0.95)
+        GType.MovimientoAcelerado -> 
+            let velActual = p LMi.^. GType.parEnt . GType.entMov . GType.movVel
+                nuevaVel  = min 1000.0 (velActual + 50.0) 
+            in p LMi.& GType.parEnt . GType.entMov . GType.movVel LMi..~ nuevaVel
+
+        GType.MovimientoSalpicadura ->
+            let mitad  = vidMax / 2
+                factor = if vidAct > mitad then 1.15 else 0.85
+                
+            in p LMi.& GType.parEnt . GType.entMov . GType.movVel LMi.%~ (* factor)
+                 LMi.& GType.parEnt . GType.entBox . GType.boxTam LMi.%~ (LV.^* 0.98)
+        GType.MovimientoLinealDecr ->
+             p LMi.& GType.parEnt . GType.entMov . GType.movVel LMi..~ (velBase * ratio)
+
+        GType.MovimientoLinealIncr ->
+             p LMi.& GType.parEnt . GType.entMov . GType.movVel LMi..~ (velBase * (1.0 - ratio))
 
 dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> GType.Particula -> IO ()
 dibujar renderer texture camPos zoom particula = do
     let pos  = particula LMi.^. GType.parEnt . GType.entBox . GType.boxPos
         tam  = particula LMi.^. GType.parEnt . GType.entBox . GType.boxTam
+        ang  = particula LMi.^. GType.parEnt . GType.entBox . GType.boxAng
         pId  = particula LMi.^. GType.parId
 
-        color =
-            case pId of
-                _ | pId == idParBala    -> SDL.V4 200 230 255 255
-                  | pId == idParChispa  -> SDL.V4 255 230 150 255
-                  | pId == idParFuego   -> SDL.V4 255 120 40 220
-                  | pId == idParHumo    -> SDL.V4 80 80 80 180
-                  | otherwise           -> SDL.V4 100 100 100 255
+    if GD.esVisible pos tam ang camPos zoom 
+        then do
+          let (color, finalTam, finalAng) = case pId of
+                  _ | pId == idParBala    -> (SDL.V4 255 240 200 255, tam, ang)
+                    | pId == idParChispa  -> (SDL.V4 255 230 150 255, tam, ang)
+                    | pId == idParFuego   -> (SDL.V4 255 100 20 200,  tam, ang)
+                    | pId == idParHumo    -> (SDL.V4 100 100 100 150, tam, ang)
+                    | pId == idParPlasma  -> (SDL.V4 0 255 255 255, SDL.V2 (tam LMi.^. SDL._x * 2.5) (tam LMi.^. SDL._y * 0.6), ang)
+                    | pId == idParCohete  -> (SDL.V4 80 100 80 255, tam, ang)
+                    | pId == idParSangre  -> (SDL.V4 130 0 0 230, tam, ang)
+                    | otherwise           -> (SDL.V4 255 255 255 255, tam, ang)
 
-    GD.dibujarTextura renderer texture camPos zoom pos tam 0.0 color
+          GD.dibujarTextura renderer texture camPos zoom pos finalTam finalAng color
+        else return()

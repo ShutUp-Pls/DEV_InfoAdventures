@@ -11,11 +11,12 @@ import qualified Globals.Types      as GType
 import qualified Fisica.Colisiones  as FCol
 import qualified Fisica.Angulos     as FAng
 
-factorFriccion, umbralParada, maxPasoPixel, margenAntiAtasco :: Float
+factorFriccion, umbralParada, maxPasoPixel, margenAntiAtasco, distanciaSensor :: Float
 factorFriccion = 0.90      
 umbralParada = 0.5         
 maxPasoPixel = 5.0
 margenAntiAtasco = 0.01
+distanciaSensor = 40.0
 
 moverEntidad :: SDL.V2 Float -> [GType.Box] -> GType.Entidad -> GType.Entidad
 moverEntidad velIntencion mapa entidad =
@@ -34,7 +35,7 @@ moverEntidad velIntencion mapa entidad =
             entidad
               LMi.& GType.entBox . GType.boxPos LMi..~ posFinal
               LMi.& GType.entEmp . GType.empVec LMi..~ nuevoEmpuje
-              LMi.& GType.entMov . GType.movAct LMi..~ LMe.norm velFinal
+              LMi.& GType.entMov . GType.movAct LMi..~ LMe.norm (velFinal LV.^* factorFriccion)
     in entidadFinal
 
 calcularVelocidadFisica :: SDL.V2 Float  -> SDL.V2 Float -> (SDL.V2 Float, Bool)
@@ -92,8 +93,30 @@ rebotarVelocidad normal velRestanteTotal =
 rutinaPersecucion :: SDL.V2 Float -> Bool -> [GType.Box] -> GType.Entidad -> GType.Entidad
 rutinaPersecucion posObjetivo detectado mapObstaculos entidad =
     let 
-        entidadOrientada = girarHaciaObjetivo posObjetivo detectado entidad
-        velIntencion     = calcularIntencionMovimiento detectado entidadOrientada
+        posEnt       = entidad LMi.^. GType.entBox . GType.boxPos
+        vecObjetivo  = posObjetivo - posEnt
+        distObjetivo = LMe.norm vecObjetivo
+        
+        dirObjetivo = if distObjetivo > 0 
+                      then LMe.normalize vecObjetivo 
+                      else SDL.V2 0 0
+
+        fuerzaEvasion = calcularFuerzaEvasion entidad mapObstaculos
+        dirFinal = if detectado 
+                   then LMe.normalize (dirObjetivo + fuerzaEvasion)
+                   else SDL.V2 0 0 
+
+        angActual   = entidad LMi.^. GType.entBox . GType.boxAng
+        rotSpeed    = entidad LMi.^. GType.entMov . GType.movRot
+        
+        targetAng   = if dirFinal == SDL.V2 0 0
+                      then angActual
+                      else (atan2 (dirFinal LMi.^. SDL._y) (dirFinal LMi.^. SDL._x)) * (180 / pi)
+        
+        nuevoAngulo = FAng.suavizarAngulo angActual targetAng rotSpeed
+        entidadOrientada = entidad LMi.& GType.entBox . GType.boxAng LMi..~ nuevoAngulo
+        velIntencion = calcularIntencionMovimiento detectado entidadOrientada
+
     in  moverEntidad velIntencion mapObstaculos entidadOrientada
 
 girarHaciaObjetivo :: SDL.V2 Float -> Bool -> GType.Entidad -> GType.Entidad
@@ -144,3 +167,39 @@ girarEntidadPorTeclado input entidad =
                 in FAng.suavizarAngulo anguloActual targetAng velRotFinal
     in
     entidad LMi.& GType.entBox . GType.boxAng LMi..~ nuevoAngulo
+
+calcularFuerzaEvasion :: GType.Entidad -> [GType.Box] -> SDL.V2 Float
+calcularFuerzaEvasion entidad obstaculos =
+    let 
+        pos      = entidad LMi.^. GType.entBox . GType.boxPos
+        ang      = entidad LMi.^. GType.entBox . GType.boxAng
+
+        dirC     = FAng.anguloAVector ang
+        dirL     = FAng.anguloAVector (ang - 30)
+        dirR     = FAng.anguloAVector (ang + 30)
+
+        tipC     = pos + (dirC LV.^*  distanciaSensor)
+        tipL     = pos + (dirL LV.^* (distanciaSensor * 0.8))
+        tipR     = pos + (dirR LV.^* (distanciaSensor * 0.8))
+
+        mkProbe p = GType.Box p (SDL.V2 5 5) 0 2.5
+        
+        probeC    = mkProbe tipC
+        probeL    = mkProbe tipL
+        probeR    = mkProbe tipR
+
+        choca probe = case FCol.checkColision probe obstaculos of
+                        Just _  -> True
+                        Nothing -> False
+        
+        hitC = choca probeC
+        hitL = choca probeL
+        hitR = choca probeR
+
+        fuerza = case (hitL, hitC, hitR) of
+                    (True,  _, False) -> dirR LV.^* 2.0   -- Girar derecha fuerte
+                    (False, _, True)  -> dirL LV.^* 2.0   -- Girar izquierda fuerte
+                    (True,  _, True)  -> dirL LV.^* 3.0   -- Atrapado, giro brusco
+                    (_,  True, _)     -> dirL LV.^* 1.5   -- Choque frontal, desvío
+                    _                 -> SDL.V2 0 0       -- Camino libre
+    in fuerza

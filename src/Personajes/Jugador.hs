@@ -6,10 +6,13 @@ import qualified Lens.Micro             as LMi
 import qualified Lens.Micro.Mtl         as LMi
 import qualified Linear.Vector          as LV
 import qualified Control.Monad.State    as CMS
+import qualified Data.List              as DL
+import qualified Fisica.Colisiones      as FCol
 -- Módulos propios
 import qualified Types
 import qualified Globals.Types          as GType
 import qualified Personajes.Types       as PType
+import qualified Objetos.Buff           as OBuff
 
 import qualified Graficos.Dibujado      as GD
 
@@ -27,7 +30,7 @@ crearBoxJugador pos = GType.Box
 crearStatsMovimiento :: GType.Movimiento
 crearStatsMovimiento = GType.Movimiento 
     { GType._movVel = 4.0
-    , GType._movRot = 5.0 
+    , GType._movRot = 3.0 
     , GType._movFac = 1.0
     , GType._movAct = 0.0
     }
@@ -61,11 +64,11 @@ crearJugador startPos spawnPos = PType.Jugador
     { PType._factCorrer = 1.5
     , PType._spawnPoint = spawnPos
     , PType._jugEnt     = crearEntidadJugador startPos
+    , PType._estaVivo   = True
     }
 
 moverJugadorP :: Types.Input -> PType.Jugador -> [GType.Box] -> PType.Jugador
-moverJugadorP input jugadorActual mapObstaculos = 
-    CMS.execState (moverJugador input mapObstaculos) jugadorActual
+moverJugadorP input jugadorActual mapObstaculos = CMS.execState (moverJugador input mapObstaculos) jugadorActual
 
 moverJugador :: Types.Input -> [GType.Box] -> CMS.State PType.Jugador ()
 moverJugador input mapObstaculos = do
@@ -90,12 +93,11 @@ girarJugadorM input = do
                 let rads        = atan2 (fromIntegral dirY) (fromIntegral dirX)
                     targetAng   = rads * (180 / pi)
                     diff        = FAng.diferenciaAngular anguloActual targetAng
-                    multiplicador = 1.0 + (diff / 180.0) * 3.0
+                    multiplicador = 1.0 + (diff / 180.0) * 5.0
                     velRotFinal   = velRotBase * multiplicador
                 in FAng.suavizarAngulo anguloActual targetAng velRotFinal
 
     PType.jugEnt . GType.entBox . GType.boxAng LMi..= nuevoAngulo
-
 
 desplazarJugadorM :: Types.Input -> [GType.Box] -> CMS.State PType.Jugador ()
 desplazarJugadorM input mapObstaculos = do
@@ -105,6 +107,7 @@ desplazarJugadorM input mapObstaculos = do
         runFactor    = jugador LMi.^. PType.factCorrer
         anguloActual = entidad LMi.^. GType.entBox . GType.boxAng
         velBase      = entidad LMi.^. GType.entMov . GType.movVel
+        velFactor    = entidad LMi.^. GType.entMov . GType.movFac
 
     let dirX = (if input LMi.^. Types.derecha then 1 else 0) - (if input LMi.^. Types.izquierda then 1 else 0) :: Int
         dirY = (if input LMi.^. Types.abajo   then 1 else 0) - (if input LMi.^. Types.arriba  then 1 else 0) :: Int
@@ -117,8 +120,9 @@ desplazarJugadorM input mapObstaculos = do
             if not hayMovimiento 
             then 0.0 
             else
-                if estaCorriendo
-                then velBase * multCorrer
+                let velocidadFinal = velBase * multCorrer * velFactor
+                in if estaCorriendo
+                then velocidadFinal
                 else
                     let rads      = atan2 (fromIntegral dirY) (fromIntegral dirX)
                         targetAng = rads * (180 / pi)
@@ -127,7 +131,7 @@ desplazarJugadorM input mapObstaculos = do
                             if diff >= ventanaTolerancia
                             then 0.0
                             else (ventanaTolerancia - diff) / ventanaTolerancia
-                    in velBase * multCorrer * factorAlineacion
+                    in velocidadFinal * factorAlineacion
 
     let vecDir       = FAng.anguloAVector anguloActual
         velIntencion = vecDir LV.^* magnitud
@@ -135,6 +139,27 @@ desplazarJugadorM input mapObstaculos = do
     let entidadFinal = FMen.moverEntidad velIntencion mapObstaculos entidad
     
     PType.jugEnt LMi..= entidadFinal
+
+logicaGestionItems :: PType.Jugador -> [GType.Item] -> (PType.Jugador, [GType.Item], Float)
+logicaGestionItems jug items = 
+    let boxJug = jug LMi.^. PType.jugEnt . GType.entBox
+        itemsTocados   = FCol.checkColisionsItems boxJug items
+        itemsRestantes = filter (\it -> not (it `elem` itemsTocados)) items
+
+        (itemsTiempo, itemsOtros) = DL.partition OBuff.esItemTiempo itemsTocados
+        
+        tiempoTotal = sum $ map (\it -> 
+            case it LMi.^. GType.iteTipo of 
+                 GType.EsBuff b -> b LMi.^. GType.bufVlr
+                 _ -> 0
+            ) itemsTiempo
+            
+        (equipables, consumibles) = DL.partition (\it -> it LMi.^. GType.iteInv) itemsOtros
+        
+        jugConBuffs = foldr (\it j -> aplicarEfecto it j) jug consumibles
+        jugFinal    = foldr equiparItem jugConBuffs equipables
+
+    in (jugFinal, itemsRestantes, tiempoTotal)
 
 cambiarArmaSiguiente :: PType.Jugador -> PType.Jugador
 cambiarArmaSiguiente jug =
@@ -200,4 +225,41 @@ dibujar renderer skinTexture camPos zoom player = do
     let tamJ = player LMi.^. PType.jugEnt . GType.entBox . GType.boxTam
     let angJ = player LMi.^. PType.jugEnt . GType.entBox . GType.boxAng
     
-    GD.dibujarTextura renderer skinTexture camPos zoom posJ tamJ angJ (SDL.V4 0 200 60 255)
+    if GD.esVisible posJ tamJ angJ camPos zoom 
+        then do
+            GD.dibujarTextura renderer skinTexture camPos zoom posJ tamJ angJ (SDL.V4 0 200 60 255)
+        else return()
+
+aplicarEfecto :: GType.Item -> PType.Jugador -> PType.Jugador
+aplicarEfecto item j = 
+    let maybeBuff = item LMi.^? GType.iteTipo . GType._EsBuff
+    in case maybeBuff of
+        Nothing -> j
+        Just buffOriginal ->
+            let 
+                bid = buffOriginal LMi.^. GType.bufID
+                val = buffOriginal LMi.^. GType.bufVlr
+            in 
+                if bid == OBuff.idBuffVidA then
+                    j LMi.& PType.jugEnt . GType.entVid . GType.vidAct LMi.%~ (\v -> min 100 (v + val))
+                else if bid == OBuff.idBuffTiempo then
+                     j 
+                else 
+                    let currentBuffs = j LMi.^. PType.jugEnt . GType.entBuf
+                        nuevosBuffs  = OBuff.agregarBuff buffOriginal currentBuffs
+                    in j LMi.& PType.jugEnt . GType.entBuf LMi..~ nuevosBuffs
+
+procesarBuffs :: Float -> PType.Jugador -> PType.Jugador
+procesarBuffs dt jug = 
+    let 
+        buffsActuales  = jug LMi.^. PType.jugEnt . GType.entBuf
+        buffsRestantes = map (\b -> b LMi.& GType.bufTmp LMi.%~ (\t -> t - dt)) buffsActuales
+        buffsVivos     = filter (\b -> (b LMi.^. GType.bufTmp) > 0) buffsRestantes
+        buffsVel  = filter (\b -> (b LMi.^. GType.bufID) `elem` OBuff.idsVelocidad) buffsVivos
+        factorVel = case buffsVel of
+            [] -> 1.0
+            (b:_) -> b LMi.^. GType.bufVlr
+
+    in jug 
+        LMi.& PType.jugEnt . GType.entBuf LMi..~ buffsVivos
+        LMi.& PType.jugEnt . GType.entMov . GType.movFac LMi..~ factorVel

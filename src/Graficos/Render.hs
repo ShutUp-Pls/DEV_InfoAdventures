@@ -41,6 +41,9 @@ renderGame renderer font blockTexture skinTexture input gs = do
     let camPos   = cam LMi.^. GType.posCamara
     let dzSize   = cam LMi.^. GType.deadzoneSize
 
+    let faseTutorial = gs LMi.^. Types.faseTutorial
+    let esTutorial   = gs LMi.^. Types.tutorialActivo
+
     SDL.rendererDrawColor renderer SDL.$= SDL.V4 120 120 120 255
     SDL.clear renderer
 
@@ -65,11 +68,17 @@ renderGame renderer font blockTexture skinTexture input gs = do
             else return ()
 
         let screenDims = (fromIntegral GD.screenWidth, fromIntegral GD.screenHeight)
+        let (winW, _) = screenDims
         GHUD.dibujarFondosHUD renderer blockTexture screenDims
         GHUD.dibujarInventario renderer font skinTexture player
-        GHUD.dibujarBuffs renderer font skinTexture bufJ
+        GHUD.dibujarBuffs renderer font skinTexture bufJ winW
         GHUD.dibujarHUDAtasco renderer font blockTexture player
         GHUD.dibujarHUD renderer font blockTexture player tiempo screenDims
+
+        if esTutorial 
+            then GHUD.dibujarTutorialOverlay renderer font blockTexture faseTutorial screenDims
+            else return ()
+
     else do
         GHUD.dibujarMuerte renderer font skinTexture tiempoTotal
 

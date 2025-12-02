@@ -1,8 +1,8 @@
 # Informe de Desarrollo:
 
-### 🛠️ Refactorización y Uso de Monad State: El Caso del Jugador
+### 🛠️ Refactorización y Uso de Monad State: El Caso del Jugador.
 
-Durante el desarrollo de la versión `v1.0.1.0` a `v1.0.1.1`, identificamos un área crítica donde la programación puramente funcional clásica estaba generando código difícil de mantener y extender.
+Durante el desarrollo y hasta la versión `v1.0.0.0`, no se estaba usando `monadeState` de una forma "*Ad Hoc*" (Comprobable a traves del historial de *Pusheos* en GitHub). No fue hasta la refactorización `v1.0.1.0` donde identificamos un área crítica en la programación puramente funcional clásica estaba generando código difícil de mantener y extender.
 
 1. **El Problema:
 "Cascada de declaraciones dependientes en un lenguaje fuertemente tipado"**

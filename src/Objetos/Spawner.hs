@@ -3,6 +3,7 @@ module Objetos.Spawner where
 import qualified SDL
 import qualified System.Random  as SR
 import qualified Lens.Micro     as LMi
+import qualified Linear.Vector  as LV
 -- Módulos propios
 import qualified Types
 import qualified Globals.Types      as GType
@@ -25,12 +26,15 @@ crearSpawner pos radio tipo (tMin, tMax) = Types.Spawner
 
 posicionAleatoria :: SDL.V2 Float -> Float -> SR.StdGen -> (SDL.V2 Float, SR.StdGen)
 posicionAleatoria centro radio gen0 =
-    let (u, gen1) = SR.randomR (0.0, 1.0 :: Float) gen0
-        (v, gen2) = SR.randomR (0.0, 2 * pi :: Float) gen1
-        r = radio * sqrt u
-        x = r * cos v
-        y = r * sin v
-    in (centro + SDL.V2 x y, gen2)
+    let (u, gen1) = SR.randomR (-1.0, 1.0 :: Float) gen0
+        (v, gen2) = SR.randomR (-1.0, 1.0 :: Float) gen1
+        dirVector = SDL.V2 u v
+        distCuadrada = (u*u) + (v*v)
+        finalOffset = if distCuadrada > 1.0 || distCuadrada == 0
+                      then (SDL.normalize dirVector) LV.^* (radio * 0.9)
+                      else dirVector LV.^* radio
+                      
+    in (centro + finalOffset, gen2)
 
 actualizarSpawners :: Float -> SR.StdGen -> [Types.Spawner] -> ([Types.Spawner], [PType.Zombie], [GType.Item], SR.StdGen)
 actualizarSpawners dt genInicial listaSpawners = 
@@ -73,4 +77,7 @@ dibujar renderer texture camPos zoom spawner = do
     let tam = spawner LMi.^. Types.spaBox . GType.boxTam
     let ang = spawner LMi.^. Types.spaBox . GType.boxAng
     
-    GD.dibujarTextura renderer texture camPos zoom pos tam ang (SDL.V4 128 0 128 255)
+    if GD.esVisible pos tam ang camPos zoom 
+        then do
+            GD.dibujarTextura renderer texture camPos zoom pos tam ang (SDL.V4 128 0 128 255)
+        else return()

@@ -8,45 +8,73 @@ import qualified Lens.Micro             as LMi
 import qualified Globals.Types          as GType
 import qualified Fisica.SAT             as FS  
 
-calcularRadioAprox :: SDL.V2 Float -> Float
-calcularRadioAprox (SDL.V2 w h) = (w + h) / 2
+obtenerRadio :: GType.Box -> Float
+obtenerRadio box = 
+    let r = box LMi.^. GType.boxRad
+    in if r > 0 
+       then r 
+       else LMe.norm (box LMi.^. GType.boxTam) * 0.5
 
 mtvBoxes :: GType.Box -> GType.Box -> Maybe (SDL.V2 Float)
 mtvBoxes boxA boxB =
-    let posA = boxA LMi.^. GType.boxPos
-        tamA = boxA LMi.^. GType.boxTam
-        angA = boxA LMi.^. GType.boxAng
+    let 
+        halfA   = (boxA LMi.^. GType.boxTam) LV.^* 0.5
+        halfB   = (boxB LMi.^. GType.boxTam) LV.^* 0.5
+        centerA = (boxA LMi.^. GType.boxPos) + halfA
+        centerB = (boxB LMi.^. GType.boxPos) + halfB
 
-        posB = boxB LMi.^. GType.boxPos
-        tamB = boxB LMi.^. GType.boxTam
-        angB = boxB LMi.^. GType.boxAng
-    in FS.satCollision posA tamA angA posB tamB angB
+        radA = obtenerRadio boxA
+        radB = obtenerRadio boxB
+        
+        distCuadrada = LMe.quadrance (centerA - centerB)
+        radiosSum    = radA + radB
+        
+    in 
+    if distCuadrada > (radiosSum * radiosSum) 
+        then Nothing
+        else 
+            let posA = boxA LMi.^. GType.boxPos
+                tamA = boxA LMi.^. GType.boxTam
+                angA = boxA LMi.^. GType.boxAng
+                
+                posB = boxB LMi.^. GType.boxPos
+                tamB = boxB LMi.^. GType.boxTam
+                angB = boxB LMi.^. GType.boxAng
+            in FS.satCollision posA tamA angA posB tamB angB
 
 separarEntidades :: Float -> [GType.Entidad] -> GType.Entidad -> GType.Entidad
 separarEntidades rechazo obstaculos entidad =
     let 
-        miPos       = entidad LMi.^. GType.entBox . GType.boxPos
-        miRadio     = entidad LMi.^. GType.entBox . GType.boxRad
+        boxEnt      = entidad LMi.^. GType.entBox
+        halfEnt     = (boxEnt LMi.^. GType.boxTam) LV.^* 0.5
+        miPosCentro = (boxEnt LMi.^. GType.boxPos) + halfEnt
+        miRadio     = obtenerRadio boxEnt
         
-        empujeTotal = foldr (calcEmpujeIndividual miPos miRadio) (SDL.V2 0 0) obstaculos
+        empujeTotal = foldr (calcEmpujeIndividual miPosCentro miRadio) (SDL.V2 0 0) obstaculos
     in 
         entidad LMi.& GType.entBox . GType.boxPos LMi.%~ (+ (empujeTotal LV.^* rechazo))
   
 calcEmpujeIndividual :: SDL.V2 Float -> Float -> GType.Entidad -> SDL.V2 Float -> SDL.V2 Float
 calcEmpujeIndividual miPos miRadio otroEnemigo acc =
-    let otroPos = otroEnemigo LMi.^. GType.entBox . GType.boxPos
+    let 
+        boxOtro   = otroEnemigo LMi.^. GType.entBox
+        halfOtro  = (boxOtro LMi.^. GType.boxTam) LV.^* 0.5
+        otroPos   = (boxOtro LMi.^. GType.boxPos) + halfOtro
     in if otroPos == miPos then acc else
         let
-            otroRadio = otroEnemigo LMi.^. GType.entBox . GType.boxRad
+            otroRadio = obtenerRadio boxOtro
+            vectorDif = miPos - otroPos
             
-            distanciaMinima = miRadio + otroRadio
-            vectorDif       = miPos - otroPos
-            distancia       = LMe.norm vectorDif
+            distCuadrada    = LMe.quadrance vectorDif
+            minDist         = miRadio + otroRadio
+            minDistCuadrada = minDist * minDist
         in
-            if distancia < distanciaMinima && distancia > 0.001
+            if distCuadrada < minDistCuadrada && distCuadrada > 0.0001
             then
-                let penetracion = distanciaMinima - distancia
-                    direccion   = LMe.normalize vectorDif
+                let 
+                    distancia   = sqrt distCuadrada 
+                    penetracion = minDist - distancia
+                    direccion   = vectorDif LV.^* (1.0 / distancia)
                 in acc + (direccion LV.^* penetracion)
             else acc
 

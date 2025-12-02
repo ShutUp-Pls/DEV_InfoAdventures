@@ -21,6 +21,20 @@ data Spawner = Spawner
     } deriving (Show, Eq)
 LMT.makeLenses ''Spawner
 
+data TutorialFase 
+    = FaseIntro      -- Overlay explicativo del HUD
+    | FaseArmas      -- Entrega de armas y explicación de disparo
+    | FaseCamara     -- Desbloqueo de Zoom y Deadzone
+    | FaseZombieMsg  -- "Cuidado un zombie"
+    | FaseCombate    -- Esperando a que mate al zombie
+    | FaseBuffsMsg   -- Explicación de items y spawn de buffs
+    | FaseBuffsWait  -- Espera (5s)
+    | FaseTiempoMsg  -- Explicación del tiempo
+    | FaseSobrevive  -- Mensaje final
+    | FaseFin        -- Tutorial terminado (Juego normal)
+    | FaseNula       -- No hay tutorial
+    deriving (Show, Eq)
+
 data GameState = GameState
     { _camara        ::   GType.Camara
     , _jugador       ::   PType.Jugador
@@ -33,6 +47,9 @@ data GameState = GameState
     , _tiempoJuego   :: Float
     , _tiempoTotal   :: Float
     , _cooldownUI   :: Float
+    , _tutorialActivo :: Bool
+    , _faseTutorial   :: TutorialFase
+    , _timerTutorial  :: Float
     } deriving (Show, Eq)
 LMT.makeLenses ''GameState
 
@@ -51,5 +68,6 @@ data Input = Input
     , _disparar      :: Bool
     , _prevWeapon    :: Bool
     , _nextWeapon    :: Bool
+    , _espacio       :: Bool
     } deriving (Show, Eq)
 LMT.makeLenses ''Input

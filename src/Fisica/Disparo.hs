@@ -1,83 +1,65 @@
 module Fisica.Disparo where
--- Módulos del sistema
+
 import qualified SDL
 import qualified System.Random      as SR
 import qualified Linear.Vector      as LV
 import qualified Lens.Micro         as LMi
--- Módulos propios
+import qualified Data.Maybe         as DM
+
 import qualified Personajes.Types   as PType
 import qualified Globals.Types      as GType
 import qualified Objetos.Particula  as OPart
 import qualified Objetos.Arma       as OArma
 
 procesarDisparo :: Float -> Bool -> SR.StdGen -> PType.Jugador -> ([GType.Particula], PType.Jugador, SR.StdGen)
-procesarDisparo dt isClicking rng jugador = 
-    let 
-        maybeArma = jugador LMi.^? PType.jugEnt . GType.entHnd . GType.iteTipo . GType._EsArma
-    in 
-    case maybeArma of
-        Nothing -> ([], jugador, rng)
-        Just wState ->
-            let
-                -- 1. Lógica de Cooldown y Heat (Se mantiene igual)
-                myMaxHeat     = wState LMi.^. GType.eaMaxHeat
-                myHeatPerShot = wState LMi.^. GType.eaHeatPerShot
-                myCoolRate    = wState LMi.^. GType.eaCoolRate
-                myFireRate    = wState LMi.^. GType.eaFireRate
-                weaponId      = wState LMi.^. GType.armID
-                
-                currentHeat   = wState LMi.^. GType.eaHeat
-                currentCool   = wState LMi.^. GType.eaCool
-                wasJammed     = wState LMi.^. GType.eaJammed
+procesarDisparo dt click rng jug = DM.fromMaybe ([], jug, rng) $ do
+    armaState <- jug LMi.^? PType.jugEnt . GType.entHnd . GType.iteTipo . GType._EsArma
+    
+    let (armaEnfriada, desatascada) = aplicarEnfriamiento dt armaState
+    let puedeDisparar = click && desatascada && (armaEnfriada LMi.^. GType.eaCool <= 0)
 
-                newCool       = max 0 (currentCool - dt)
-                newHeatBase   = max 0 (currentHeat - (myCoolRate * dt))
-                isStillJammed = wasJammed && (newHeatBase > 0)
-                shouldShoot   = isClicking && (newCool <= 0) && not isStillJammed
+    if puedeDisparar then do
+        let (parts, rngFinal) = resolverDisparo jug (armaEnfriada LMi.^. GType.armID) rng
+        let armaDisparada     = aplicarCalentamiento armaEnfriada
+        let jugFinal          = setArma armaDisparada jug
+        return (parts, jugFinal, rngFinal)
+    else do
+        let jugFinal = setArma armaEnfriada jug
+        return ([], jugFinal, rng)
 
-            in if shouldShoot
-               then
-                    let 
-                        ent             = jugador LMi.^. PType.jugEnt
-                        box             = ent LMi.^. GType.entBox
-                        posTL           = box LMi.^. GType.boxPos
-                        size            = box LMi.^. GType.boxTam
-                        radio           = box LMi.^. GType.boxRad 
-                        angleDeg        = box LMi.^. GType.boxAng
-                        center          = posTL + (size LV.^* 0.5)
-                        
-                        angleRad        = angleDeg * (pi / 180.0)
-                        dir             = SDL.V2 (cos angleRad) (sin angleRad)
-                        distanciaSalida = radio + 5.0 
-                        posSalida       = center + (dir LV.^* distanciaSalida)
+aplicarEnfriamiento :: Float -> GType.Arma -> (GType.Arma, Bool)
+aplicarEnfriamiento dt arma = 
+    let newCool = max 0 ((arma LMi.^. GType.eaCool) - dt)
+        newHeat = max 0 ((arma LMi.^. GType.eaHeat) - ((arma LMi.^. GType.eaCoolRate) * dt))
+        stillJammed = (arma LMi.^. GType.eaJammed) && (newHeat > 0)
+        newState = arma LMi.& GType.eaCool LMi..~ newCool LMi.& GType.eaHeat LMi..~ newHeat LMi.& GType.eaJammed LMi..~ stillJammed
+    in (newState, not stillJammed)
 
-                        (nuevasParticulas, rngFinal) = 
-                            if weaponId == OArma.idArmLanzallamas 
-                            then OPart.generarAbanicoFuego posSalida angleDeg 5 rng
-                            else (OPart.generarProyectil OPart.idParBala posSalida angleDeg, rng)
+aplicarCalentamiento :: GType.Arma -> GType.Arma
+aplicarCalentamiento arma =
+    let heat  = arma LMi.^. GType.eaHeat + arma LMi.^. GType.eaHeatPerShot
+        maxH  = arma LMi.^. GType.eaMaxHeat
+        isJam = heat >= maxH
+    in arma LMi.& GType.eaCool LMi..~ (arma LMi.^. GType.eaFireRate)
+            LMi.& GType.eaHeat LMi..~ (if isJam then maxH else heat)
+            LMi.& GType.eaJammed LMi..~ isJam
 
-                        heatPostShot = newHeatBase + myHeatPerShot
-                        (finalHeat, finalJammed) = 
-                            if heatPostShot >= myMaxHeat 
-                            then (myMaxHeat, True) 
-                            else (heatPostShot, isStillJammed)
+resolverDisparo :: PType.Jugador -> Int -> SR.StdGen -> ([GType.Particula], SR.StdGen)
+resolverDisparo jug wId rng =
+    let (pos, ang) = calcularSalida (jug LMi.^. PType.jugEnt . GType.entBox)
+    in case wId of
+        _ | wId == OArma.idArmLanzallamas -> OPart.generarAbanicoFuego pos ang 5 rng
+          | wId == OArma.idArmEscopeta    -> OPart.generarEscopetazo pos ang 6 rng
+          | wId == OArma.idArmRPG         -> (OPart.generarProyectil OPart.idParCohete pos ang, rng)
+          | wId == OArma.idArmPlasma      -> (OPart.generarProyectil OPart.idParPlasma pos ang, rng)
+          | otherwise                     -> (OPart.generarProyectil OPart.idParBala pos ang, rng)
 
-                        nuevoEstadoArma = wState
-                            LMi.& GType.eaCool    LMi..~ myFireRate 
-                            LMi.& GType.eaHeat    LMi..~ finalHeat
-                            LMi.& GType.eaJammed  LMi..~ finalJammed
+calcularSalida :: GType.Box -> (SDL.V2 Float, Float)
+calcularSalida box =
+    let angRad = (box LMi.^. GType.boxAng) * (pi / 180.0)
+        dir    = SDL.V2 (cos angRad) (sin angRad)
+        center = (box LMi.^. GType.boxPos) + ((box LMi.^. GType.boxTam) LV.^* 0.5)
+    in (center + (dir LV.^* ((box LMi.^. GType.boxRad) + 5.0)), box LMi.^. GType.boxAng)
 
-                        jugadorActualizado = jugador LMi.& PType.jugEnt . GType.entHnd . GType.iteTipo . GType._EsArma LMi..~ nuevoEstadoArma
-
-                    in (nuevasParticulas, jugadorActualizado, rngFinal)
-               
-               else
-                    let 
-                        nuevoEstadoArma = wState
-                            LMi.& GType.eaCool    LMi..~ newCool
-                            LMi.& GType.eaHeat    LMi..~ newHeatBase
-                            LMi.& GType.eaJammed  LMi..~ isStillJammed
-                        
-                        jugadorActualizado = jugador LMi.& PType.jugEnt . GType.entHnd . GType.iteTipo . GType._EsArma LMi..~ nuevoEstadoArma
-                        
-                    in ([], jugadorActualizado, rng)
+setArma :: GType.Arma -> PType.Jugador -> PType.Jugador
+setArma arma jug = jug LMi.& PType.jugEnt . GType.entHnd . GType.iteTipo . GType._EsArma LMi..~ arma

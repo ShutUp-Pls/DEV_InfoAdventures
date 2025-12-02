@@ -129,54 +129,6 @@ mapaBox =
     , GType.Box (SDL.V2 27.6 (-844.2)) (SDL.V2 400.0 100.0) 245.0 0
     ]
 
-puntosSpawnJugador :: [SDL.V2 Float]
-puntosSpawnJugador =
-    [ SDL.V2 4500 500
-    ]
-
-puntosCentroInteres :: [SDL.V2 Float]
-puntosCentroInteres =
-    [ SDL.V2 3000 1650
-    , SDL.V2 2850 1600 
-    , SDL.V2 3150 1600
-    , SDL.V2 2850 1750  
-    , SDL.V2 3150 1750
-    , SDL.V2 3000 1500  
-    , SDL.V2 3000 1800 
-    , SDL.V2 2700 1650
-    , SDL.V2 3300 1650
-    , SDL.V2 2950 1700
-    ]
-
-puntosArmas :: [SDL.V2 Float]
-puntosArmas =
-    [ SDL.V2 3000 1650 
-    , SDL.V2 2700 1850 
-    , SDL.V2 3300 1450 
-    , SDL.V2 2050  260
-    , SDL.V2 4950 1450 
-    , SDL.V2  350  700  
-    , SDL.V2 1900 2550
-    , SDL.V2 4100  900 
-    , SDL.V2 3600 2600
-    , SDL.V2 2600 2800
-    ]
-
-puntosBuffos :: [SDL.V2 Float]
-puntosBuffos =
-    [ SDL.V2 2800 1300
-    , SDL.V2 3200 2000 
-    , SDL.V2 1600 1900
-    , SDL.V2  500 1250 
-    , SDL.V2 3900 2750
-    , SDL.V2 5100 1900 
-    , SDL.V2 2300 2300 
-    , SDL.V2 4200 1400
-    , SDL.V2 4600  600 
-    , SDL.V2 1400 2600
-    ]
-
-
 
 dibujar :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> GType.Box -> IO ()
 dibujar renderer skinTexture camPos zoom caja = do
@@ -184,4 +136,6 @@ dibujar renderer skinTexture camPos zoom caja = do
     let tamJ = caja LMi.^. GType.boxTam
     let angJ = caja LMi.^. GType.boxAng
     
-    GD.dibujarTextura renderer skinTexture camPos zoom posJ tamJ angJ (SDL.V4 195 195 195 255)
+    if GD.esVisible posJ tamJ angJ camPos zoom 
+        then do GD.dibujarTextura renderer skinTexture camPos zoom posJ tamJ angJ (SDL.V4 195 195 195 255)
+        else return ()

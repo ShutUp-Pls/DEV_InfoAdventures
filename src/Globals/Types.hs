@@ -111,6 +111,10 @@ LMT.makeLenses ''Camara
 data ComportamientoParticula 
     = MovimientoLineal
     | MovimientoGradualDown
+    | MovimientoAcelerado
+    | MovimientoSalpicadura
+    | MovimientoLinealDecr
+    | MovimientoLinealIncr
     deriving (Show, Eq)
 
 data Particula = Particula
@@ -120,3 +124,6 @@ data Particula = Particula
     , _parDmg   :: Float
     } deriving (Show, Eq)
 LMT.makeLenses ''Particula
+
+tiempoInicial :: Float
+tiempoInicial = 100

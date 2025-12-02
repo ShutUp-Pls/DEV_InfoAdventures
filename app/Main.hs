@@ -1,12 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
-
 -- Módulos del sistema
 import qualified SDL
 import qualified SDL.Font               as Font
 import qualified Control.Monad.State    as CMS
 import qualified Lens.Micro             as LMi
-
 -- Módulos propios
 import qualified Juego
 import qualified Inicio
@@ -19,19 +17,15 @@ import qualified Graficos.Render        as RR
 
 main :: IO ()
 main = do
-    -- 1. Inicialización Global (SDL y Video)
     SDL.initializeAll
     Font.initialize
 
-    -- Creamos la ventana y el renderer UNA VEZ para toda la aplicación
     window <- SDL.createWindow "Juego full Haskell" SDL.defaultWindow
         { SDL.windowInitialSize = SDL.V2 RD.screenWidth RD.screenHeight }
     renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
 
-    -- 2. Entramos al ciclo maestro de la aplicación
     appFlow renderer window
 
-    -- 3. Limpieza final al cerrar la app completa
     SDL.destroyRenderer renderer
     SDL.destroyWindow window
     Font.quit
@@ -39,11 +33,10 @@ main = do
 
 appFlow :: SDL.Renderer -> SDL.Window -> IO ()
 appFlow renderer window = do
-    decision <- Launcher.runLauncher renderer
+    decision <- Launcher.runLauncher window renderer
     
     case decision of
-        Launcher.ActionExit -> 
-            putStrLn "Saliendo de la aplicación..." 
+        Launcher.ActionExit -> putStrLn "Saliendo de la aplicación..." 
         Launcher.ActionPlay modoTutorial -> do
             putStrLn $ "Iniciando juego... (Tutorial: " ++ show modoTutorial ++ ")"
             correrJuego renderer modoTutorial
@@ -67,7 +60,6 @@ correrJuego renderer isTutorial = do
     SDL.destroyTexture blockTexture
     Font.free font
 
--- El bucle del juego (ligeramente modificado para retornar () en vez de cerrar SDL)
 gameLoop :: SDL.Renderer -> Font.Font -> SDL.Texture -> SDL.Texture -> Types.GameState -> IO ()
 gameLoop renderer font blockTexture skinTexture currentState = do
     events <- SDL.pollEvents
@@ -90,16 +82,15 @@ gameLoop renderer font blockTexture skinTexture currentState = do
           , Types._disparar     = keyboardState SDL.ScancodeJ
           , Types._prevWeapon   = keyboardState SDL.ScancodeK
           , Types._nextWeapon   = keyboardState SDL.ScancodeL
+          , Types._espacio      = keyboardState SDL.ScancodeSpace
           }
 
-    let newState = CMS.execState (Juego.updateGame input) currentState
-    
-    -- Lógica de muerte o salida
+    let newState = CMS.execState (Juego.actualizarJuego input) currentState
+
     let vidaActual               = newState LMi.^. Types.jugador LMi.^. PType.jugEnt . GType.entVid . GType.vidAct
     let tiempoRestante           = newState LMi.^. Types.tiempoJuego
     let estaMuerto = vidaActual <= 0 || tiempoRestante <= 0
-    
-    -- Si el usuario presiona X (Salir) o muere, el loop termina
+
     let returnToMenu = (estaMuerto && Types._teclaSalir input) || (userQuit)
 
     RR.renderGame renderer font blockTexture skinTexture input newState

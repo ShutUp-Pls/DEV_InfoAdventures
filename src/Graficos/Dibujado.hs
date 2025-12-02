@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Graficos.Dibujado where
 -- Módulos del sistema
 import qualified SDL
@@ -11,7 +12,7 @@ import qualified Data.Text          as DT
 -- Módulos propios
 import qualified Globals.Types      as GType
 
-type ParteArma = (SDL.V2 Float, SDL.V2 Float, SDL.V4 DW.Word8)
+type ParteDibujo = (SDL.V2 Float, SDL.V2 Float, SDL.V4 DW.Word8)
 
 screenWidth, screenHeight :: FCT.CInt
 screenWidth = 800
@@ -104,117 +105,56 @@ dibujarOverlay :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> SDL.V2 Float ->
 dibujarOverlay renderer texture screenPos size color = do
     dibujarTextura renderer texture screenCenter 1.0 screenPos size 0 color
 
-dibujarGlock :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> IO ()
-dibujarGlock renderer texture camPos zoom basePos tam _ang = do
-    let SDL.V2 ancho _ = tam
-        escalaBase     = if ancho <= 0 then 1 else ancho / 70.0
-        esc f          = f * escalaBase
+rotarPunto :: SDL.V2 Float -> SDL.V2 Float -> Float -> SDL.V2 Float
+rotarPunto (SDL.V2 px py) (SDL.V2 ox oy) angleDeg =
+    let 
+        rads = angleDeg * (pi / 180.0)
+        c = cos rads
+        s = sin rads
+        
+        tx = px - ox
+        ty = py - oy
+        
+        rx = tx * c - ty * s
+        ry = tx * s + ty * c
+    in 
+        SDL.V2 (rx + ox) (ry + oy)
 
-    let colSlide    = SDL.V4 40 40 40 255
-        colFrame    = SDL.V4 20 20 20 255 
-        colDetalle  = SDL.V4  8  8  8 255 
+esVisible :: SDL.V2 Float -> SDL.V2 Float -> Float -> SDL.V2 Float -> Float -> Bool
+esVisible pos@(SDL.V2 _ _) tam@(SDL.V2 w h) angle camPos zoom =
+    let 
+        pAncho = 800.0 
+        pAlto  = 600.0
+        worldW = pAncho / zoom 
+        worldH = pAlto  / zoom
+        (SDL.V2 cx cy) = camPos
 
-    let partes :: [ParteArma]
-        partes = [
-            (SDL.V2 0 0,   SDL.V2 70 11, colSlide),
-            (SDL.V2 8 11,  SDL.V2 52 10, colFrame),
-            (SDL.V2 43 20, SDL.V2 14 26, colFrame),
-            (SDL.V2 22 16, SDL.V2 16 9,  colFrame)
-            ]
+        camLeft   = cx - (worldW / 2)
+        camRight  = cx + (worldW / 2)
+        camTop    = cy - (worldH / 2)
+        camBottom = cy + (worldH / 2)
+        
+        centro = pos + (tam LV.^* 0.5)
 
-    mapM_ (\(offsetLocal, sizeLocal, color) -> do
-            let finalPos  = basePos + (offsetLocal LV.^* escalaBase)
-            let finalSize = sizeLocal LV.^* escalaBase
-            dibujarTextura renderer texture camPos zoom finalPos finalSize _ang color
-        ) partes
+        p1 = pos
+        p2 = pos + SDL.V2 w 0
+        p3 = pos + SDL.V2 w h
+        p4 = pos + SDL.V2 0 h
 
-    let triggerStart = basePos + SDL.V2 (esc 28) (esc 19)
-    let triggerEnd   = triggerStart + SDL.V2 0 (esc 6)
-    dibujarLinea renderer texture camPos zoom triggerStart triggerEnd (esc 2) colDetalle
+        points = if abs angle < 0.1 
+                 then [p1, p2, p3, p4]
+                 else map (\p -> rotarPunto p centro angle) [p1, p2, p3, p4]
 
-    let sepStart = basePos + SDL.V2 (esc 3)  (esc 11)
-    let sepEnd   = basePos + SDL.V2 (esc 67) (esc 11)
-    dibujarLinea renderer texture camPos zoom sepStart sepEnd 1 colDetalle
+        xs = map (\(SDL.V2 px _) -> px) points
+        ys = map (\(SDL.V2 _ py) -> py) points
 
-dibujarEscopeta :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> IO ()
-dibujarEscopeta renderer texture camPos zoom basePos tam _ang = do
-    let SDL.V2 ancho _ = tam
-        escalaBase     = if ancho <= 0 then 1 else ancho / 180.0
+        minX = minimum xs
+        maxX = maximum xs
+        minY = minimum ys
+        maxY = maximum ys
 
-    let colMetalOscuro = SDL.V4 30 30 30 255
-        colMetalClaro  = SDL.V4 60 60 60 255
-        colMadera      = SDL.V4 101 67 33 255
-
-    let partes :: [ParteArma]
-        partes = [
-            (SDL.V2 0 10,    SDL.V2 40 25, colMadera),
-            (SDL.V2 40 5,    SDL.V2 30 20, colMetalOscuro),
-            (SDL.V2 70 5,    SDL.V2 110 8, colMetalClaro),
-            (SDL.V2 70 15,   SDL.V2 100 8, colMetalOscuro),
-            (SDL.V2 90 14,   SDL.V2 40 10, colMadera),
-            (SDL.V2 50 25,   SDL.V2 12 8,  colMetalOscuro)
-            ]
-
-    mapM_ (\(offsetLocal, sizeLocal, color) -> do
-            let finalPos  = basePos + (offsetLocal LV.^* escalaBase)
-            let finalSize = sizeLocal LV.^* escalaBase
-            dibujarTextura renderer texture camPos zoom finalPos finalSize _ang color
-        ) partes
-
-dibujarFusilM52 :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> IO ()
-dibujarFusilM52 renderer texture camPos zoom basePos tam _ang = do
-    let SDL.V2 ancho _ = tam
-        escalaBase     = if ancho <= 0 then 1 else ancho / 220.0
-
-    let colCuerpo   = SDL.V4 50 50 55 255
-        colStock    = SDL.V4 35 35 35 255
-        colGrip     = SDL.V4 30 30 30 255
-        colMag      = SDL.V4 20 20 20 255
-        colMira     = SDL.V4 10 10 10 255
-        colHandguard= SDL.V4 60 65 60 255
-
-    let partes :: [ParteArma]
-        partes = [
-            (SDL.V2 0 5,     SDL.V2 50 20, colStock),
-            (SDL.V2 50 0,    SDL.V2 90 28, colCuerpo),
-            (SDL.V2 55 28,   SDL.V2 18 25, colGrip),
-            (SDL.V2 95 28,   SDL.V2 25 40, colMag),
-            (SDL.V2 140 2,   SDL.V2 70 24, colHandguard),
-            (SDL.V2 210 10,  SDL.V2 15 6,  colCuerpo),
-            (SDL.V2 70 (-8), SDL.V2 40 8,  colMira),
-            (SDL.V2 75 0,    SDL.V2 10 5,  colMira)
-            ]
-
-    mapM_ (\(offsetLocal, sizeLocal, color) -> do
-            let finalPos  = basePos + (offsetLocal LV.^* escalaBase)
-            let finalSize = sizeLocal LV.^* escalaBase
-            dibujarTextura renderer texture camPos zoom finalPos finalSize _ang color
-        ) partes
-
-dibujarLanzallamas :: SDL.Renderer -> SDL.Texture -> SDL.V2 Float -> Float -> SDL.V2 Float -> SDL.V2 Float -> Float -> IO ()
-dibujarLanzallamas renderer texture camPos zoom basePos tam _ang = do
-    let SDL.V2 ancho _ = tam
-        escalaBase     = if ancho <= 0 then 1 else ancho / 200.0
-
-    let colTanque   = SDL.V4 180 40 40 255
-        colMetal    = SDL.V4 100 100 100 255
-        colBoquilla = SDL.V4 40 30 30 255
-        colTuberia  = SDL.V4 160 140 40 255 
-        colLlama    = SDL.V4 255 100 0 255
-
-    let partes :: [ParteArma]
-        partes = [
-            (SDL.V2 40 30,   SDL.V2 100 35, colTanque),
-            (SDL.V2 20 10,   SDL.V2 140 20, colMetal),
-            (SDL.V2 0 10,    SDL.V2 20 40,  colMetal),
-            (SDL.V2 100 65,  SDL.V2 10 15,  colTuberia),
-            (SDL.V2 60 25,   SDL.V2 10 10,  colTuberia),
-            (SDL.V2 160 5,   SDL.V2 30 30,  colBoquilla),
-            (SDL.V2 185 15,  SDL.V2 5 5,    colLlama)
-            ]
-
-    mapM_ (\(offsetLocal, sizeLocal, color) -> do
-            let finalPos  = basePos + (offsetLocal LV.^* escalaBase)
-            let finalSize = sizeLocal LV.^* escalaBase
-            dibujarTextura renderer texture camPos zoom finalPos finalSize _ang color
-        ) partes
+    in 
+        (maxX > camLeft) &&
+        (minX < camRight) &&
+        (maxY > camTop) &&
+        (minY < camBottom)
