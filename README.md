@@ -1,3 +1,4 @@
+**Estudiante responsable:** Marco Antonio Delgado Saldaña
 # Instalación y Ejecución
 
 ### Requisitos Previos
