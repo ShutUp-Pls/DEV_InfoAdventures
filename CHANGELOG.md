@@ -199,3 +199,6 @@
 
  ## 2.0.0.3 -- 2025-11-02
   * Hotfix: Push para corregir la versión del commit.
+
+ ## 2.0.0.4 -- 2025-11-02
+  * Se añaden instrucciones de movimiento al HUD del tutorial.

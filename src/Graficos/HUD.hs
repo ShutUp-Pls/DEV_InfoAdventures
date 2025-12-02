@@ -239,13 +239,15 @@ dibujarTutorialOverlay renderer font texture fase (w, h) = do
             dibujarPromptEspacio renderer font texture (w, h)
 
         Types.FaseArmas -> do
-            let boxPos = SDL.V2 10 (hf - 160)
-            let boxSize = SDL.V2 400 100
+            let boxPos = SDL.V2 10 (hf - 220)
+            let boxSize = SDL.V2 400 160
             GD.dibujarOverlay renderer texture boxPos boxSize (SDL.V4 0 0 0 180)
-            
-            GD.dibujarTexto renderer font "'J' para disparar" (fmap round (boxPos + SDL.V2 20 5)) (SDL.V4 255 255 255 255)
-            GD.dibujarTexto renderer font "'K' y 'L' para cambiar de arma" (fmap round (boxPos + SDL.V2 20 35)) (SDL.V4 255 255 255 255)
-            GD.dibujarTexto renderer font "Cuidado: ¡Se sobrecalientan!" (fmap round (boxPos + SDL.V2 20 65)) (SDL.V4 255 100 100 255)
+
+            GD.dibujarTexto renderer font "'WASD' para moverse" (fmap round (boxPos + SDL.V2 20 5)) (SDL.V4 255 255 255 255)
+            GD.dibujarTexto renderer font "'Shift' para correr" (fmap round (boxPos + SDL.V2 20 35)) (SDL.V4 255 255 255 255)
+            GD.dibujarTexto renderer font "'J' para disparar" (fmap round (boxPos + SDL.V2 20 65)) (SDL.V4 255 255 255 255)
+            GD.dibujarTexto renderer font "'K' y 'L' para cambiar de arma" (fmap round (boxPos + SDL.V2 20 95)) (SDL.V4 255 255 255 255)
+            GD.dibujarTexto renderer font "Cuidado: ¡Se sobrecalientan!" (fmap round (boxPos + SDL.V2 20 125)) (SDL.V4 255 100 100 255)
 
             dibujarPromptEspacio renderer font texture (w, h)
 
