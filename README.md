@@ -4,8 +4,10 @@
 Necesitas tener **Make** y **GHCup** (Haskell) instalados. Puedes descargarlos desde sus sitios oficiales:
 
 * **Haskell (GHCup):** [https://www.haskell.org/ghcup/](https://www.haskell.org/ghcup/)
+    
     *(Este instalador gestionará GHC, Cabal y HLS automáticamente).*
 * **Make:** [https://www.gnu.org/software/make/](https://www.gnu.org/software/make/)
+    
     *(En Windows se recomienda instalarlo vía [Chocolatey](https://community.chocolatey.org/packages/make) o usar el entorno MSYS2).*
 
 ### Paso 1: Diagnóstico
@@ -28,6 +30,8 @@ Una vez que `make check` pase sin errores, simplemente ejecuta:
 make run
 ```
 Esto descargará automáticamente las librerías de Haskell necesarias, compilará el juego y lo iniciará.
+
+> *El repositorio cuenta con archivo `.py` de Python, más no tienen ningún efecto funcional en el juego. Solo fueron herramientas generadas para facilitar el desarrollo. Puedes eliminarlos sin ningún problema una vez desargado el repositorio.*
 
 # Introducción: Del Paradigma a la Práctica
 
