@@ -202,3 +202,6 @@
 
  ## 2.0.0.4 -- 2025-11-02
   * Se añaden instrucciones de movimiento al HUD del tutorial.
+
+ ## 2.0.0.5 -- 2025-11-02
+  * Bugfix: El contador no comenzaba una vez terminado el tutorial. Pensé que lo había arreglado en la versión `V-2.0.0.2`

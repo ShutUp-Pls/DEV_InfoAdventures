@@ -52,13 +52,13 @@ actualizarSistemasGlobalesM = do
     vivo   <- verificarJugadorVivo
     tiempo <- LMi.use Types.tiempoJuego
 
-    let relojActivo = vivo && case fase of
-            Types.FaseFin       -> False 
+    let esFaseActiva = case fase of
+            Types.FaseFin       -> True
             Types.FaseSobrevive -> True
-            Types.FaseNula      -> tiempo > 0
+            Types.FaseNula      -> True
             _                   -> False
 
-    CMo.when relojActivo $ Types.tiempoJuego LMi.%= (\t -> max 0 (t - dt))
+    let relojActivo = vivo && (tiempo > 0) && esFaseActiva
     
     Types.cooldownUI  LMi.%= (\t -> max 0 (t - dt))
 
