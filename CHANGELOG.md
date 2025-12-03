@@ -209,3 +209,6 @@
  ## 2.0.0.6 -- 2025-11-02
   * Bugfix: El contador no comenzaba una vez terminado el tutorial al morir no indicaba el tiempo de supervivencia.
   * Rebalanceo: Se añade más fuerza de empuje al jugador.
+
+ ## 2.0.0.7 -- 2025-11-02
+  * Rebalanceo: Ahora las armas se spawnean en sus lugares desde el primer momento de iniciado el juego (Excepto la de plasma, esa spawnea random en el mapa cada 3-4 minutos).

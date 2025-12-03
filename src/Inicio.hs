@@ -133,7 +133,7 @@ spawnerGlock = Types.Spawner
     { Types._areaSpawn    = 10.0 
     , Types._tipoSpawn    = Types.SpawnItemFijo (OArma.crearItemArma OArma.idArmGlock (SDL.V2 0 0))
     , Types._rangoTiempo  = (30.0, 60.0)
-    , Types._tiempoActual = 45.0
+    , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 4000 1270) (SDL.V2 32 32) 0.0 0.0
     }
 
@@ -142,7 +142,7 @@ spawnerSMG = Types.Spawner
     { Types._areaSpawn    = 10.0
     , Types._tipoSpawn    = Types.SpawnItemFijo (OArma.crearItemArma OArma.idArmSMG (SDL.V2 0 0))
     , Types._rangoTiempo  = (120.0, 180.0)
-    , Types._tiempoActual = 150.0
+    , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 9400 (-3100)) (SDL.V2 32 32) 0.0 0.0
     }
 
@@ -151,7 +151,7 @@ spawnerEscopeta = Types.Spawner
     { Types._areaSpawn    = 10.0
     , Types._tipoSpawn    = Types.SpawnItemFijo (OArma.crearItemArma OArma.idArmEscopeta (SDL.V2 0 0))
     , Types._rangoTiempo  = (30.0, 60.0)
-    , Types._tiempoActual = 45.0
+    , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 (-20) (-3770)) (SDL.V2 32 32) 0.0 0.0
     }
 
@@ -160,7 +160,7 @@ spawnerFusil = Types.Spawner
     { Types._areaSpawn    = 10.0
     , Types._tipoSpawn    = Types.SpawnItemFijo (OArma.crearItemArma OArma.idArmFusil (SDL.V2 0 0))
     , Types._rangoTiempo  = (30.0, 60.0)
-    , Types._tiempoActual = 45.0
+    , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 1910 (-4320)) (SDL.V2 32 32) 0.0 0.0
     }
 
@@ -169,7 +169,7 @@ spawnerSniper = Types.Spawner
     { Types._areaSpawn    = 10.0
     , Types._tipoSpawn    = Types.SpawnItemFijo (OArma.crearItemArma OArma.idArmSniper (SDL.V2 0 0))
     , Types._rangoTiempo  = (30.0, 60.0)
-    , Types._tiempoActual = 45.0
+    , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 3180 (-4320)) (SDL.V2 32 32) 0.0 0.0
     }
 
@@ -178,7 +178,7 @@ spawnerLanzallamas = Types.Spawner
     { Types._areaSpawn    = 10.0
     , Types._tipoSpawn    = Types.SpawnItemFijo (OArma.crearItemArma OArma.idArmLanzallamas (SDL.V2 0 0))
     , Types._rangoTiempo  = (240.0, 300.0)
-    , Types._tiempoActual = 270.0
+    , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 7250 4300) (SDL.V2 32 32) 0.0 0.0
     }
 
@@ -187,7 +187,7 @@ spawnerRPG = Types.Spawner
     { Types._areaSpawn    = 10.0
     , Types._tipoSpawn    = Types.SpawnItemFijo (OArma.crearItemArma OArma.idArmRPG (SDL.V2 0 0))
     , Types._rangoTiempo  = (180.0, 240.0)
-    , Types._tiempoActual = 210.0
+    , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 7250 (-3300)) (SDL.V2 32 32) 0.0 0.0
     }
 
@@ -195,8 +195,8 @@ spawnerPlasma :: Types.Spawner
 spawnerPlasma = Types.Spawner
     { Types._areaSpawn    = 4800.0
     , Types._tipoSpawn    = Types.SpawnItem (OArma.crearItemArma OArma.idArmPlasma (SDL.V2 0 0))
-    , Types._rangoTiempo  = (240.0, 300.0)
-    , Types._tiempoActual = 270.0
+    , Types._rangoTiempo  = (180.0, 240.0)
+    , Types._tiempoActual = 200.0
     , Types._spaBox       = GType.Box (SDL.V2 4700 450) (SDL.V2 32 32) 0.0 0.0
     }
 
@@ -205,7 +205,7 @@ spawnerMinigun = Types.Spawner
     { Types._areaSpawn    = 10.0
     , Types._tipoSpawn    = Types.SpawnItemFijo (OArma.crearItemArma OArma.idArmMinigun (SDL.V2 0 0))
     , Types._rangoTiempo  = (180.0, 240.0)
-    , Types._tiempoActual = 210.0
+    , Types._tiempoActual = 0.0
     , Types._spaBox       = GType.Box (SDL.V2 3050 4950) (SDL.V2 32 32) 0.0 0.0
     }
     
